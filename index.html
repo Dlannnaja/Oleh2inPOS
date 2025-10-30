@@ -2326,8 +2326,8 @@ function clearSalesByRange() {
     return;
   }
 
-  const start = new Date(fromEl.value + "T00:00:00");
-  const end = new Date(toEl.value + "T23:59:59");
+  const start = new Date(fromEl.value);
+  const end = new Date(toEl.value);
   if (start > end) {
     showSalesAlert("⚠️ Rentang tanggal tidak valid!");
     return;
@@ -2336,13 +2336,14 @@ function clearSalesByRange() {
   // filter hanya data di luar rentang (biar yang di range kehapus)
   const kept = sales.filter(s => {
     const d = new Date(s.date || s.dateDisplay || "");
-    return !(d >= start && d <= end);
+    // PERBAIKAN: Tambahkan tanda kurung yang benar
+    return !(d >= new Date(start.setHours(0,0,0,0)) && d <= new Date(end.setHours(23,59,59,999)));
   });
 
   // simpan ulang data yang tersisa
   localStorage.setItem("sales", JSON.stringify(kept));
 
-  // Perbarui variabel di memori juga
+  // --- PERBAIKAN: Perbarui variabel di memori juga ---
   sales = kept;
 
   // refresh tabel
@@ -3249,6 +3250,7 @@ init();
 </script>
 </body>
 </html>
+
 
 
 
