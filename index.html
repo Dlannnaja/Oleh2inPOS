@@ -1448,37 +1448,16 @@ function getLocalDateTime(){
 
 /* ---------- toast ---------- */
 function showToast(msg) {
-  const toast = document.createElement("div");
-  toast.className = "toast";
-  toast.innerText = msg;
-
-  Object.assign(toast.style, {
-    position: "fixed",
-    top: "25px",
-    left: "50%",
-    transform: "translateX(-50%)",
-    background: "rgba(0, 123, 255, 0.95)",
-    color: "#fff",
-    padding: "10px 18px",
-    borderRadius: "8px",
-    fontSize: "14px",
-    fontWeight: "600",
-    zIndex: 99999,
-    boxShadow: "0 4px 14px rgba(0,0,0,0.25)",
-    opacity: 0,
-    transition: "opacity 0.4s ease, transform 0.4s ease"
-  });
-
-  document.body.appendChild(toast);
+  const toast = document.getElementById("appToast");
+  toast.textContent = msg;
+  toast.style.display = "block";
+  toast.classList.add("show");
+  
   setTimeout(() => {
-    toast.style.opacity = "1";
-    toast.style.transform = "translateX(-50%) translateY(0)";
-  }, 50);
-
-  setTimeout(() => {
-    toast.style.opacity = "0";
-    toast.style.transform = "translateX(-50%) translateY(-10px)";
-    setTimeout(() => toast.remove(), 500);
+    toast.classList.remove("show");
+    setTimeout(() => {
+      toast.style.display = "none";
+    }, 260);
   }, 2500);
 }
 
@@ -1899,16 +1878,6 @@ function savePrinterPreference(){
   showToast(sel.value ? 'Preferensi printer disimpan: ' + sel.value : 'Preferensi printer dikosongkan')
 }
 
-/* Fungsi bantu untuk ubah tanggal dari localStorage */
-function parseStoredDate(dateString) {
-  if (!dateString) return new Date();
-  // Jika sudah format ISO
-  if (dateString.includes("T")) return new Date(dateString);
-  // Jika format manual
-  const parts = dateString.split(/[-/ :]/);
-  return new Date(parts[0], parts[1] - 1, parts[2] || 1);
-}
-
 /* ---------- Restock load/export ---------- */
 /* Perbaiki loadRestock agar aman tanpa error */
 function loadRestock(showNotification = true) {
@@ -1930,7 +1899,7 @@ function loadRestock(showNotification = true) {
     return;
   }
 
-  const allRestocks = JSON.parse(localStorage.getItem("restocks")) || [];
+  const allRestocks = restocks || [];
   tbody.innerHTML = "";
 
   // 2. Filter data berdasarkan input
@@ -1980,8 +1949,7 @@ function loadRestock(showNotification = true) {
   
 /* ======== TOMBOL TAMPILKAN ======== */
 function exportRestock() {
-  const restocks = JSON.parse(localStorage.getItem("restocks")) || [];
-  if (!restocks.length) {
+  if (!restocks || restocks.length === 0) {
     showRestockAlert("⚠️ Belum ada data restock untuk diekspor.");
     return;
   }
@@ -2002,8 +1970,7 @@ function exportRestock() {
 }
 
 function exportRestockCSV() {
-  const restocks = JSON.parse(localStorage.getItem("restocks")) || [];
-  if (!restocks.length) {
+  if (!restocks || restocks.length === 0) {
     showRestockAlert("⚠️ Belum ada data restock untuk diekspor.");
     return;
   }
@@ -2032,7 +1999,11 @@ function exportRestockByMonth() {
   }
 
   const selectedMonth = monthInput.value;
-  const restocks = JSON.parse(localStorage.getItem("restocks")) || [];
+  
+  if (!restocks || restocks.length === 0) {
+    showRestockAlert("⚠️ Belum ada data restock untuk diekspor.");
+    return;
+  }
 
   // Filter berdasarkan bulan
   const filtered = restocks.filter(r => r.date && r.date.startsWith(selectedMonth));
@@ -2090,17 +2061,24 @@ function printRestock() {
 }
 
 // tombol "Clear Restock"
-function clearRestocks() {
+async function clearRestocks() {
   if (!confirm("Yakin ingin menghapus semua data restock (barang masuk)?")) return;
-  localStorage.removeItem("restocks");
   
-  // Kosongkan tabel secara manual dan tampilkan pesan
-  const tbody = document.getElementById("restockTableBody");
-  if (tbody) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:10px" class="muted">Belum ada data restock.</td></tr>`;
+  try {
+    await database.ref('restocks').remove();
+    restocks = [];
+    
+    // Kosongkan tabel secara manual dan tampilkan pesan
+    const tbody = document.getElementById("restockTableBody");
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:10px" class="muted">Belum ada data restock.</td></tr>`;
+    }
+    
+    showRestockAlert("🗑️ Semua data restock berhasil dihapus.");
+  } catch (error) {
+    console.error("Error clearing restocks:", error);
+    showRestockAlert("Gagal menghapus data restock. Coba lagi.");
   }
-  
-  showRestockAlert("🗑️ Semua data restock berhasil dihapus.");
 }
 
 // tombol "Download Bulanan"
@@ -2120,7 +2098,10 @@ function exportRestockByRange() {
     return;
   }
 
-  const restocks = JSON.parse(localStorage.getItem("restocks")) || [];
+  if (!restocks || restocks.length === 0) {
+    showRestockAlert("⚠️ Belum ada data restock untuk diekspor.");
+    return;
+  }
 
   // Filter berdasarkan rentang tanggal
   const filtered = restocks.filter(r => {
@@ -2157,7 +2138,8 @@ async function checkout(){
   
   try {
     // 1. Hitung total
-    const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    const totals = computeCartTotals();
+    const total = totals.finalTotal;
     
     // 2. Tampilkan loading
     showToast("Memproses pembayaran...");
@@ -2225,7 +2207,7 @@ function selectPaymentMethod(method, el){
 }
 
 /* confirm payment: immediately reduce stock, create pending transaction, show receipt preview (print allowed), but DO NOT finalize sale yet */
-function confirmPayment(){
+async function confirmPayment(){
   if(!selectedPaymentMethod) return alert("Pilih metode pembayaran terlebih dahulu")
   if(cart.length === 0) return alert("Keranjang kosong")
 
@@ -2233,7 +2215,8 @@ function confirmPayment(){
   const btn = document.getElementById('confirmPayBtn')
   btn.disabled = true
   btn.textContent = "Memproses..."
-  setTimeout(()=> {
+  
+  try {
     // create invoice and transaction
     const invoice = 'INV' + Date.now()
     const now = new Date()
@@ -2263,17 +2246,16 @@ function confirmPayment(){
     }
 
     // 1) reduce stock immediately (per request)
-    transaction.items.forEach(it => {
-      const p = products.find(x=>x.sku===it.sku)
-      if(p){
-        p.qty = Math.max(0, p.qty - it.qty)
-      }
-    })
+    for (const item of transaction.items) {
+      const productRef = database.ref('products/' + item.sku);
+      await productRef.transaction(currentStock => {
+        if (currentStock === null) return null;
+        return Math.max(0, currentStock - item.qty);
+      });
+    }
 
-    // 2) save products & sales (save as pending sale in sales list)
-    sales.push(transaction)
-    localStorage.setItem('sales', JSON.stringify(sales))
-    localStorage.setItem('products', JSON.stringify(products))
+    // 2) save sales (save as pending sale in sales list)
+    await database.ref('sales/' + invoice).set(transaction);
 
     // 3) mark pendingPaidInvoice so UI shows "Selesaikan Penjualan"
     pendingPaidInvoice = invoice
@@ -2283,13 +2265,20 @@ function confirmPayment(){
     btn.disabled = false
     btn.textContent = "Konfirmasi Pembayaran"
     closePaymentModal()
-    renderCart(); renderFinalStock(); loadSales();
+    renderCart(); 
+    renderFinalStock(); 
+    loadSales();
 
     // open preview
     openReceiptPreview(invoice)
 
     showToast("Pembayaran tercatat. Cetak struk atau selesaikan penjualan untuk memasukkan laporan.")
-  }, 700)
+  } catch (error) {
+    console.error("Error confirming payment:", error);
+    showToast("Gagal memproses pembayaran. Coba lagi.");
+    btn.disabled = false;
+    btn.textContent = "Konfirmasi Pembayaran";
+  }
 }
 
 /* open receipt preview modal for given invoice */
@@ -2350,11 +2339,10 @@ function printPendingReceipt(){
 }
 
 /* finalizePendingSale: mark sale as finalized and add to daily report. This does NOT change stock (already reduced on confirm). */
-function finalizePendingSale(){
+async function finalizePendingSale(){
   if(!pendingPaidInvoice) return alert("Tidak ada transaksi untuk diselesaikan.")
-  const idx = sales.findIndex(s => s.invoice === pendingPaidInvoice)
-  if(idx === -1) return alert("Transaksi tidak ditemukan")
-  const tx = sales[idx]
+  const tx = sales.find(s => s.invoice === pendingPaidInvoice)
+  if(!tx) return alert("Transaksi tidak ditemukan")
   if(tx.finalized){
     showToast("Transaksi sudah diselesaikan.")
     document.getElementById('receiptPreviewModal').style.display = 'none'
@@ -2364,23 +2352,34 @@ function finalizePendingSale(){
     return
   }
 
-  tx.finalized = true
-  tx.status = 'completed'
-  tx.completedAt = getLocalDateTime()
-  sales[idx] = tx
-  localStorage.setItem('sales', JSON.stringify(sales))
+  try {
+    // Update transaction in Firebase
+    await database.ref('sales/' + pendingPaidInvoice).update({
+      finalized: true,
+      status: 'completed',
+      completedAt: getLocalDateTime()
+    });
 
-  // clear pending, clear cart (sale has been finalized)
-  pendingPaidInvoice = null
-  localStorage.removeItem('pendingPaidInvoice')
-  cart = []
+    // Update local data
+    tx.finalized = true
+    tx.status = 'completed'
+    tx.completedAt = getLocalDateTime()
 
-  renderFinalStock();
-  renderCart();
-  render();
+    // clear pending, clear cart (sale has been finalized)
+    pendingPaidInvoice = null
+    localStorage.removeItem('pendingPaidInvoice')
+    cart = []
 
-  document.getElementById('receiptPreviewModal').style.display = 'none'
-  showToast("Penjualan diselesaikan.")
+    renderFinalStock();
+    renderCart();
+    render();
+
+    document.getElementById('receiptPreviewModal').style.display = 'none'
+    showToast("Penjualan diselesaikan.")
+  } catch (error) {
+    console.error("Error finalizing sale:", error);
+    showToast("Gagal menyelesaikan penjualan. Coba lagi.");
+  }
 }
 
 /* finishSale kept for backward compat (calls finalizePendingSale) */
@@ -2489,7 +2488,7 @@ function printSales() {
   printWindow.print();
 }
 
-function clearSales() {
+async function clearSales() {
   if (sales.length === 0) {
     showSalesAlert("Tidak ada data yang dapat dihapus, silahkan lakukan penjualan.");
     return;
@@ -2498,21 +2497,26 @@ function clearSales() {
   // konfirmasi sebelum hapus
   if (!confirm("Yakin ingin menghapus semua data laporan penjualan?")) return;
 
-  // hapus semua data penjualan dari localStorage
-  localStorage.removeItem("sales");
+  try {
+    // hapus semua data penjualan dari Firebase
+    await database.ref('sales').remove();
+    
+    // --- PERBAIKAN: Kosongkan variabel di memori juga ---
+    sales = [];
 
-  // --- PERBAIKAN: Kosongkan variabel di memori juga ---
-  sales = [];
+    // bersihkan tabel di halaman
+    const tbody = document.querySelector("#salesTbl tbody");
+    if (tbody) tbody.innerHTML = "";
 
-  // bersihkan tabel di halaman
-  const tbody = document.querySelector("#salesTbl tbody");
-  if (tbody) tbody.innerHTML = "";
-
-  // tampilkan notifikasi sukses
-  showSalesAlert("🗑️ Semua data laporan penjualan berhasil dihapus.");
+    // tampilkan notifikasi sukses
+    showSalesAlert("🗑️ Semua data laporan penjualan berhasil dihapus.");
+  } catch (error) {
+    console.error("Error clearing sales:", error);
+    showSalesAlert("Gagal menghapus data penjualan. Coba lagi.");
+  }
 }
 
-function clearSalesByRange() {
+async function clearSalesByRange() {
   const fromEl = document.getElementById("filterFrom");
   const toEl = document.getElementById("filterTo");
 
@@ -2529,23 +2533,39 @@ function clearSalesByRange() {
     return;
   }
 
-  // filter hanya data di luar rentang (biar yang di range kehapus)
-  const kept = sales.filter(s => {
-    const d = new Date(s.date || s.dateDisplay || "");
-    return !(d >= new Date(start.setHours(0,0,0,0)) && d <= new Date(end.setHours(23,59,59,999)));
-  });
+  try {
+    // Get all sales
+    const snapshot = await database.ref('sales').once('value');
+    const allSales = snapshot.val() || {};
+    
+    // Filter sales to keep (outside the range)
+    const salesToKeep = {};
+    Object.keys(allSales).forEach(invoice => {
+      const sale = allSales[invoice];
+      const saleDate = new Date(sale.date || sale.dateDisplay || "");
+      
+      // Keep if outside the range
+      if (!(saleDate >= new Date(start.setHours(0,0,0,0)) && 
+            saleDate <= new Date(end.setHours(23,59,59,999)))) {
+        salesToKeep[invoice] = sale;
+      }
+    });
+    
+    // Update Firebase with filtered sales
+    await database.ref('sales').set(salesToKeep);
+    
+    // --- PERBAIKAN: Perbarui variabel di memori juga ---
+    sales = Object.keys(salesToKeep).map(key => ({ ...salesToKeep[key], invoice: key }));
 
-  // simpan ulang data yang tersisa
-  localStorage.setItem("sales", JSON.stringify(kept));
+    // refresh tabel
+    loadSales();
 
-  // --- PERBAIKAN: Perbarui variabel di memori juga ---
-  sales = kept;
-
-  // refresh tabel
-  loadSales();
-
-  // notifikasi sukses
-  showSalesAlert("🗑️ Data laporan penjualan dalam rentang tanggal berhasil dihapus.");
+    // notifikasi sukses
+    showSalesAlert("🗑️ Data laporan penjualan dalam rentang tanggal berhasil dihapus.");
+  } catch (error) {
+    console.error("Error clearing sales by range:", error);
+    showSalesAlert("Gagal menghapus data penjualan. Coba lagi.");
+  }
 }
 
 /* ---------- SCAN and GUIDE etc (unchanged) ---------- */
@@ -3236,28 +3256,6 @@ database.ref('restocks').on('value', (snapshot) => {
 
 init();
 
-/* --- Firebase SDK Initialization --- */
-// The Firebase SDK is already initialized at the top of the script
-
-/* ---------- Firebase Initialization ---------- */
-const firebaseConfig = {
-  apiKey: "AIzaSyCovVqUfQlFXNn_2sz87PZDOj0FbJU-30s",
-  authDomain: "oleh2in-pos.firebaseapp.com",
-  databaseURL: "https://oleh2in-pos-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "oleh2in-pos",
-  storageBucket: "oleh2in-pos.firebasestorage.app",
-  messagingSenderId: "903835821905",
-  appId: "1:903835821905:web:97a8fcd4d26a2d85d95570",
-  measurementId: "G-FSNJYX0GGP"
-};
-
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
-
 </script>
 </body>
 </html>
-
-
-
