@@ -1717,7 +1717,7 @@ function renderCart(){
 
   if (pendingPaidInvoice) {
     document.getElementById("checkoutBtn").textContent = "Selesaikan Penjualan";
-  else {
+  } else {
     document.getElementById("checkoutBtn").textContent = "Bayar";
   }
 }
@@ -2235,7 +2235,7 @@ function printReceipt(t){
     // --- PERBAIKAN: Gunakan diskon dari item (i.discount) ---
     const perItemDiscount = Math.min(normal, (i.discount || 0) * i.qty);
     const afterPerItem = normal - perItemDiscount;
-    html += `<tr><td>${i.name}</td><td style="text-align:center">${i.qty}</td><td style="text-align:right"><del>Rp ${normal.toLocaleString()}</del><br/>Rp ${afterPerItem.toLocaleString()}${perItemDiscount>0?` (-${formatRupiahNumber(perItemDiscount)})`:''}</td></tr>`
+    html += `<tr><td>${i.name}</td><td style="text-align:center">${i.qty}</td><td style="text-align:right"><del>Rp ${normal.toLocaleString()}</del><br/>Rp ${afterPerItem.toLocaleString()}${perItemDiscount>0?` <small style=\"color:#16a34a\">(-${formatRupiahNumber(perItemDiscount)})</small>`:''}</td></tr>`
   })
   html += `</table><hr/>`
   // summary
@@ -2286,7 +2286,6 @@ function printSales() {
           h2 { text-align: center; margin-bottom: 20px; }
           @media print {
             body { margin: 0; }
-          }
         </style>
       </head>
       <body>
@@ -2343,7 +2342,7 @@ function clearSalesByRange() {
   // filter hanya data di luar rentang (biar yang di range kehapus)
   const kept = sales.filter(s => {
     const d = new Date(s.date || s.dateDisplay || "");
-    return !(d >= new Date(start.setHours(0,0,0,0)) && d <= new Date(end.setHours(23,59,59,999)));
+    return !(d >= new Date(start.setHours(0,0,0,0) && d <= new Date(end.setHours(23,59,59, 999));
   });
 
   // simpan ulang data yang tersisa
@@ -2657,16 +2656,16 @@ function scanSku() {
             if (lastCenter === null) {
               lastCenter = elemCenterY;
               lastChange = Date.now();
+            lastChange = Date.now();
+            // if center not changed significantly for settleMs -> done
+            if (Math.abs(lastCenter - elemCenterY) < 2 && (Date.now() - lastChange) > settleMs) {
+              resolve(true);
+              return;
             } else {
-              // if center not changed significantly for settleMs -> done
-              if (Math.abs(lastCenter - elemCenterY) < 2 && (Date.now() - lastChange) > settleMs) {
-                resolve(true);
-                return;
-              } else {
-                lastCenter = elemCenterY;
-                lastChange = Date.now();
-              }
+              lastCenter = elemCenterY;
+              lastChange = Date.now();
             }
+          }
           } else {
             // not yet centered -> update lastCenter and continue
             lastCenter = elemCenterY;
@@ -2699,7 +2698,7 @@ function scanSku() {
     await new Promise(r => setTimeout(r, 28));
 
     const rect = el.getBoundingClientRect();
-    const padding = 8;
+    const padding = 8px;
     const targetTop = rect.top + window.scrollY - padding;
     const targetLeft = rect.left + window.scrollX - padding;
     const targetWidth = Math.max(80, rect.width + padding * 2) + "px";
@@ -2728,8 +2727,8 @@ function scanSku() {
     `;
 
     // adaptive placement (same as before)...
-    const defaultTooltipWidth = 320;
-    const tooltipHeight = 140;
+    const defaultTooltipWidth = 320px;
+    const tooltipHeight = 140px;
     const spaceBelow = window.innerHeight - rect.bottom;
     let tooltipTop;
     let left = rect.left + window.scrollX;
@@ -2742,39 +2741,39 @@ function scanSku() {
 
       if (spaceRight > tooltipWidth + 20) {
         tooltipTop = topCentered;
-        left = rect.right + window.scrollX + 12;
+        left = rect.right + window.scrollX + 12px;
       } else if (spaceLeft > tooltipWidth + 20) {
         tooltipTop = topCentered;
-        left = rect.left + window.scrollY - tooltipWidth - 12;
+        left = rect.left + window.scrollY - tooltipWidth - 12px;
       } else {
         if (spaceBelow > tooltipHeight + 20) {
-          tooltipTop = rect.bottom + window.scrollY + 12;
+          tooltipTop = rect.bottom + window.scrollY + 12px;
         } else if (rect.top > tooltipHeight + 20) {
-          tooltipTop = rect.top + window.scrollY - tooltipHeight - 12;
+          tooltipTop = rect.top + window.scrollY - tooltipHeight - 12px;
         } else {
           tooltipTop = topCentered;
         }
         left = Math.min(Math.max(rect.left + window.scrollY - 40, 10), window.innerWidth + window.scrollX - (tooltipWidth + 40));
       }
     } else if (step.selector === '#btnStartScan') {
-      tooltipWidth = 260;
+      tooltipWidth = 260px;
       const spaceRight = window.innerWidth - rect.right;
       const spaceLeft = rect.left;
       const verticalCenter = rect.top + window.scrollY + (rect.height / 2);
 
-      if (spaceRight >= tooltipWidth + 12) {
+      if (spaceRight >= tooltipWidth + 12px) {
         tooltipTop = verticalCenter - (tooltipHeight / 2);
-        left = rect.right + window.scrollX + 10;
-      } else if (spaceLeft >= tooltipWidth + 12) {
+        left = rect.right + window.scrollX + 10px;
+      } else if (spaceLeft >= tooltipWidth + 12px) {
         tooltipTop = verticalCenter - (tooltipHeight / 2);
-        left = rect.left + window.scrollX - tooltipWidth - 10;
+        left = rect.left + window.scrollY - tooltipWidth - 10px;
       } else {
-        if (spaceBelow > tooltipHeight + 12) {
-          tooltipTop = rect.bottom + window.scrollY + 10;
-        } else if (rect.top > tooltipHeight + 12) {
-          tooltipTop = rect.top + window.scrollY - tooltipHeight - 10;
+        if (spaceBelow > tooltipHeight + 12px) {
+          tooltipTop = rect.bottom + window.scrollY + 10px;
+        } else if (rect.top > tooltipHeight + 12px) {
+          tooltipTop = rect.top + window.scrollY - tooltipHeight - 12px;
         } else {
-          tooltipTop = window.scrollY + window.innerHeight / 2 - tooltipHeight / 2;
+          tooltipTop = verticalCenter;
         }
         left = rect.left + window.scrollY + (rect.width / 2) - (tooltipWidth / 2);
       }
@@ -2782,20 +2781,18 @@ function scanSku() {
       const minLeft = window.scrollX + 8;
       const maxLeft = window.scrollX + window.innerWidth - (tooltipWidth + 8);
       left = Math.min(Math.max(left, minLeft), Math.max(minLeft, maxLeft));
-
       const minTop = window.scrollY + 8;
       const maxTop = window.scrollY + window.innerHeight - (tooltipHeight + 8);
-      tooltipTop = Math.min(Math.max(tooltipTop, minTop), Math.max(minTop, maxTop));
-
+      tooltipTop = Math.min(Math.max(tooltipTop, minTop, maxTop));
       tooltip.style.maxWidth = tooltipWidth + "px";
     } else {
       tooltipWidth = defaultTooltipWidth;
       tooltip.style.maxWidth = tooltipWidth + "px";
 
       if (spaceBelow > tooltipHeight + 20) {
-        tooltipTop = rect.bottom + window.scrollY + 12;
+        tooltipTop = rect.bottom + window.scrollY + 12px;
       } else if (rect.top > tooltipHeight + 20) {
-        tooltipTop = rect.top + window.scrollY - tooltipHeight - 12;
+        tooltipTop = rect.top + window.scrollY - tooltipHeight - 12px;
       } else {
         tooltipTop = window.scrollY + window.innerHeight / 2 - tooltipHeight / 2;
       }
@@ -2987,7 +2984,7 @@ function openTab(id){
   let btn = document.querySelector(`.tab-btn[onclick*="openTab('${id}')"]`);
   if(!btn){
     // fallback: match double quotes variant
-    btn = document.querySelector(`.tab-btn[onclick*='openTab("${id}")']`);
+    btn = document.querySelector(`.tab-btn[onclick*='openTab("${id}")"]`);
   }
   if(btn) btn.classList.add("active");
 
@@ -3114,7 +3111,7 @@ init();
       if(document.getElementById('__devtrap')) return;
       const el = document.createElement('div');
       el.id='__devtrap';
-      el.style.cssText='position:fixed;top:8px;left:50%;transform:translateX(-50%);background:#ffefef;color:#900;padding:8px;border-radius:6px;z-index:2147483647;font-weight:700';
+      el.style.cssText='position:fixed;top:8px;left:50%;transform:translateX(-50%);background:#ffefefef;color:#900;padding:8px;border-radius:6px;z-index:2147483647;font-weight:700';
       el.innerText='Warning: DevTools detected — actions may be blocked';
       document.body.appendChild(el);
       // blur & slow down
@@ -3126,7 +3123,7 @@ init();
     }
     function handleDevClose(){
       const el=document.getElementById('__devtrap'); if(el) el.remove();
-      document.body.style.filter='';
+      document.body.style.filter = '';
     }
     setInterval(check, 700);
     window.addEventListener('resize', check, {passive:true});
@@ -3232,7 +3229,7 @@ init();
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+token },
       body: JSON.stringify({ action: actionName, payload })
-    }).then(r=>r.json());
+    }).then(r=>r=>r.json());
   };
 
   // final notice
