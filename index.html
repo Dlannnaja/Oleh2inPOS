@@ -2270,46 +2270,119 @@ async function handlePaymentSuccess(result) {
 }
 
 /* FUNGSI TEST MIDTRANS API - DITAMBAHKAN DI SINI */
+// Ganti fungsi testMidtransAPI yang ada dengan ini
 async function testMidtransAPI() {
-  console.log("🧪 Testing Midtrans API...");
+  console.log("🧪 === START MIDTRANS API TEST ===");
   
   try {
-    const response = await fetch('https://asia-southeast1-oleh2in-pos.cloudfunctions.net/api/payment/token', {
+    // Test 1: Cek Snap.js
+    console.log("📱 Checking Midtrans Snap.js...");
+    if (typeof snap === 'undefined') {
+      console.error("❌ Midtrans Snap.js not loaded");
+      alert("❌ Midtrans Snap.js tidak terload. Refresh halaman.");
+      return;
+    }
+    console.log("✅ Midtrans Snap.js loaded");
+    
+    // Test 2: Cek Client Key
+    const scriptTag = document.querySelector('script[data-client-key]');
+    if (!scriptTag) {
+      console.error("❌ Client Key not found");
+      alert("❌ Client Key tidak ditemukan");
+      return;
+    }
+    const clientKey = scriptTag.getAttribute('data-client-key');
+    console.log("✅ Client Key found:", clientKey);
+    
+    // Test 3: Cek API endpoint
+    const apiUrl = 'https://asia-southeast1-oleh2in-pos.cloudfunctions.net/api/payment/token';
+    console.log("🌐 Testing API endpoint:", apiUrl);
+    
+    const requestBody = { 
+      cart: [{name: "Test Product", price: 1000, qty: 1}], 
+      total: 1000,
+      customer_details: {
+        first_name: "Test",
+        email: "test@example.com",
+        phone: "08123456789"
+      }
+    };
+    
+    console.log("📦 Request data:", JSON.stringify(requestBody, null, 2));
+    
+    console.log("📡 Sending request...");
+    const response = await fetch(apiUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        cart: [{name: "Test Product", price: 1000, qty: 1}], 
-        total: 1000,
-        customer_details: {
-          first_name: "Test",
-          email: "test@example.com",
-          phone: "08123456789"
-        }
-      })
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
     });
     
-    console.log("Response status:", response.status);
-    const result = await response.json();
-    console.log("Response data:", result);
+    console.log("📊 Response status:", response.status);
+    console.log("📊 Response status text:", response.statusText);
+    console.log("📊 Response headers:", [...response.headers.entries()]);
     
-    if (result.token) {
-      alert("✅ API Berhasil! Token diterima");
-      console.log("Token:", result.token);
-    } else {
-      alert("❌ API Gagal: " + (result.error || "Unknown error"));
+    // Get response text first
+    const responseText = await response.text();
+    console.log("📄 Response text:", responseText);
+    
+    let result;
+    try {
+      result = JSON.parse(responseText);
+      console.log("📋 Parsed JSON:", result);
+    } catch (e) {
+      console.error("❌ Failed to parse JSON:", e);
+      console.log("📄 Raw response:", responseText);
+      alert("❌ Response bukan JSON: " + responseText);
+      return;
     }
+    
+    if (response.ok && result.token) {
+      console.log("✅ API Success!");
+      console.log("🎫 Token length:", result.token.length);
+      console.log("🎫 Token preview:", result.token.substring(0, 50) + "...");
+      
+      alert("✅ API Berhasil! Token diterima\n\nToken: " + result.token.substring(0, 50) + "...");
+      
+      // Test token dengan Midtrans Snap
+      console.log("🔍 Testing token with Midtrans Snap...");
+      snap.pay(result.token, {
+        onSuccess: function(result) {
+          console.log("💳 Payment test successful:", result);
+          alert("✅ Midtrans payment test successful!");
+        },
+        onError: function(result) {
+          console.error("❌ Payment test error:", result);
+          alert("❌ Midtrans payment test failed: " + JSON.stringify(result));
+        },
+        onClose: function() {
+          console.log("🚪 Payment popup closed");
+        }
+      });
+    } else {
+      console.error("❌ API Failed!");
+      console.error("❌ Response ok:", response.ok);
+      console.error("❌ Has token:", !!result.token);
+      console.error("❌ Error message:", result.error);
+      
+      alert("❌ API Gagal!\n\nStatus: " + response.status + "\n" +
+            "Error: " + (result.error || "Unknown error") + "\n" +
+            "Response: " + responseText);
+    }
+    
   } catch (error) {
-    alert("❌ Error: " + error.message);
-    console.error("API Error:", error);
+    console.error("❌ === CATCH ERROR ===");
+    console.error("❌ Error name:", error.name);
+    console.error("❌ Error message:", error.message);
+    console.error("❌ Error stack:", error.stack);
+    
+    alert("❌ Error Terjadi!\n\n" + error.message + "\n\nCek console untuk detail lengkap.");
   }
-}
   
-/* close payment modal */
-function closePaymentModal(){
-  document.getElementById('paymentModal').style.display = 'none'
-  selectedPaymentMethod = null
+  console.log("🏁 === END MIDTRANS API TEST ===");
 }
-
 /* select payment method */
 function selectPaymentMethod(method, el){
   selectedPaymentMethod = method
@@ -3376,3 +3449,4 @@ init();
 </script>
 </body>
 </html>
+
