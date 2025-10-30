@@ -2342,7 +2342,7 @@ function clearSalesByRange() {
   // filter hanya data di luar rentang (biar yang di range kehapus)
   const kept = sales.filter(s => {
     const d = new Date(s.date || s.dateDisplay || "");
-    return !(d >= new Date(start.setHours(0,0,0,0) && d <= new Date(end.setHours(23,59,59, 999));
+    return !(d >= new Date(start.setHours(0,0,0,0) && d <= new Date(end.setHours(23,59,59, 999))));
   });
 
   // simpan ulang data yang tersisa
@@ -3241,4 +3241,5 @@ init();
 </script>
 </body>
 </html>
+
 
