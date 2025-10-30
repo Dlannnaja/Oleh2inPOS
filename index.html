@@ -935,6 +935,57 @@
     font-weight: 600;
   }
 
+  /* PERBAIKAN: Search Box untuk Daftar Produk */
+  .search-container {
+    position: relative;
+    margin-bottom: var(--spacing-lg);
+  }
+  
+  .search-container input {
+    width: 100%;
+    padding: 14px 14px 14px 45px; /* Padding kiri 45px untuk icon */
+    font-size: 16px;
+    border: 1px solid #dee2e6;
+    border-radius: var(--radius);
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    height: 50px; /* Tinggi yang lebih konsisten */
+  }
+  
+  .search-container input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(11, 116, 218, 0.15);
+  }
+  
+  .search-container::before {
+    content: "🔍";
+    position: absolute;
+    left: 15px; /* Posisi yang tepat untuk icon */
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 18px;
+    pointer-events: none; /* Agar icon tidak mengganggu input */
+    z-index: 1;
+  }
+
+  /* PERBAIKAN: Form Tambah Produk dengan kategori */
+  .form-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+    margin-top: var(--spacing-lg);
+    justify-content: flex-end; /* Memindahkan tombol ke kanan/bawah */
+  }
+
+  /* PERBAIKAN: Tabel Produk dengan kolom kategori */
+  #tbl th:nth-child(1), #tbl td:nth-child(1) { width: 10%; }
+  #tbl th:nth-child(2), #tbl td:nth-child(2) { width: 25%; }
+  #tbl th:nth-child(3), #tbl td:nth-child(3) { width: 15%; }
+  #tbl th:nth-child(4), #tbl td:nth-child(4) { width: 15%; }
+  #tbl th:nth-child(5), #tbl td:nth-child(5) { width: 20%; }
+  #tbl th:nth-child(6), #tbl td:nth-child(6) { width: 15%; }
+
   </style>
 
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
@@ -1053,7 +1104,19 @@
                   <input id="qty" placeholder="Stok (angka)" type="number" required />
                 </div>
               </div>
-              <div style="display:flex;gap:var(--spacing-sm);flex-wrap:wrap;align-items:center">
+              <div class="row">
+                <div class="col">
+                  <label class="muted">Kategori</label>
+                  <select id="category" required>
+                    <option value="">Pilih Kategori</option>
+                    <option value="makanan">Makanan</option>
+                    <option value="minuman">Minuman</option>
+                    <option value="snack">Snack</option>
+                    <option value="lainnya">Lainnya</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-actions">
                 <button type="submit" id="formSubmitBtn">Tambah</button>
                 <button type="button" class="ghost" onclick="resetForm()">Reset</button>
                 <div class="muted" style="margin-left: auto; font-size: var(--font-size-small)">
@@ -1072,12 +1135,12 @@
             </form>
 
             <h3>Daftar Produk</h3>
-            <input id="search" placeholder="Cari produk (Kode/Nama)..." oninput="render()" autocomplete="off"
-                   style="margin-bottom: var(--spacing-lg); width: 100%; padding: var(--spacing-sm);
-                          border-radius: var(--radius); border:1px solid #e8eef8" />
+            <div class="search-container">
+              <input id="search" placeholder="Cari produk (Kode/Nama)..." oninput="render()" autocomplete="off" />
+            </div>
             <div class="table-wrapper" style="max-height: 400px;">
               <table id="tbl">
-                <thead><tr><th>SKU</th><th>Nama</th><th>Stok</th><th>Harga</th><th>Aksi</th></tr></thead>
+                <thead><tr><th>SKU</th><th>Nama</th><th>Stok</th><th>Harga</th><th>Kategori</th><th>Aksi</th></tr></thead>
                 <tbody></tbody>
               </table>
             </div>
@@ -1380,6 +1443,7 @@ function render(){
         <td>${p.name}</td>
         <td>${p.qty}</td>
         <td>Rp ${p.price.toLocaleString()}</td>
+        <td>${p.category || '-'}</td>
         <td class="actions">
           <button class="small" onclick="editProduct('${p.sku}')">Edit</button>
           <button class="small ghost" onclick="deleteProduct('${p.sku}')">Hapus</button>
@@ -1389,7 +1453,7 @@ function render(){
   })
   if(matched === 0){
     const tr=document.createElement("tr")
-    tr.innerHTML = `<td colspan="5" class="muted" style="text-align:center;padding:14px">Tidak ada produk yang sesuai</td>`
+    tr.innerHTML = `<td colspan="6" class="muted" style="text-align:center;padding:14px">Tidak ada produk yang sesuai</td>`
     tbl.appendChild(tr)
   }
   updateRestockDropdown()
@@ -1402,14 +1466,16 @@ function submitProduct(){
   const name = document.getElementById("name").value.trim()
   const price = parseInt(document.getElementById("price").value)
   const qty = parseInt(document.getElementById("qty").value)
-  if(!sku || !name || !price || !qty) return alert("Lengkapi data!")
+  const category = document.getElementById("category").value
+  if(!sku || !name || !price || !qty || !category) return alert("Lengkapi data!")
   
   const exist = products.find(p => p.sku === sku)
   if(exist){
     exist.qty += qty
     exist.price = price
+    exist.category = category
   } else {
-    products.push({sku, name, price, qty})
+    products.push({sku, name, price, qty, category})
   }
 
   localStorage.setItem("products", JSON.stringify(products))
@@ -1423,6 +1489,7 @@ function resetForm(){
   document.getElementById("name").value=""
   document.getElementById("price").value=""
   document.getElementById("qty").value=""
+  document.getElementById("category").value=""
   document.getElementById("formSubmitBtn").textContent="Tambah"
 }
 
@@ -1433,6 +1500,7 @@ function editProduct(sku){
   document.getElementById("name").value=p.name
   document.getElementById("price").value=p.price
   document.getElementById("qty").value=p.qty
+  document.getElementById("category").value=p.category || ""
   document.getElementById("formSubmitBtn").textContent="Update"
 }
 
@@ -1764,15 +1832,26 @@ function loadRestock(showNotification = true) {
   const to = document.getElementById("filterRestockTo").value;
   const month = document.getElementById("restockMonth").value;
 
+  // 1. Validasi: Cek apakah ada filter yang dipilih
+  if (!from && !to && !month) {
+    if (showNotification) {
+      showRestockAlert("⚠️ Silahkan pilih rentan tanggal/bulan/tahun dahulu sesuai data yang mau anda cari.");
+    }
+    // Tampilkan pesan di tabel
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:10px" class="muted">Pilih filter tanggal untuk melihat laporan.</td></tr>`;
+    return;
+  }
+
   const allRestocks = JSON.parse(localStorage.getItem("restocks")) || [];
   tbody.innerHTML = "";
 
-  // Filter data berdasarkan input
+  // 2. Filter data berdasarkan input
   let filteredRestocks = allRestocks;
 
   if (from || to) {
-    const startDate = from ? new Date(from + "T00:00:00") : new Date('1970-01-01');
-    const endDate = to ? new Date(to + "T23:59:59") : new Date('2999-12-31');
+    const startDate = from ? new Date(from) : new Date('1970-01-01');
+    const endDate = to ? new Date(to) : new Date('2999-12-31');
+    endDate.setHours(23, 59, 59, 999);
 
     filteredRestocks = allRestocks.filter(r => {
       if (!r.date) return false;
@@ -1783,7 +1862,7 @@ function loadRestock(showNotification = true) {
     filteredRestocks = allRestocks.filter(r => r.date && r.date.startsWith(month));
   }
 
-  // Tampilkan hasil yang sudah difilter
+  // 3. Tampilkan hasil yang sudah difilter
   if (filteredRestocks.length === 0) {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:10px" class="muted">Tidak ada data restock pada periode yang dipilih.</td></tr>`;
     if (showNotification) {
@@ -1919,7 +1998,6 @@ function printRestock() {
     </html>
   `);
   printWindow.document.close();
-  printWindow.focus();
   printWindow.print();
 }
 
@@ -1927,9 +2005,6 @@ function printRestock() {
 function clearRestocks() {
   if (!confirm("Yakin ingin menghapus semua data restock (barang masuk)?")) return;
   localStorage.removeItem("restocks");
-  
-  // Kosongkan variabel di memori juga
-  restocks = [];
   
   // Kosongkan tabel secara manual dan tampilkan pesan
   const tbody = document.getElementById("restockTableBody");
@@ -1950,8 +2025,8 @@ function exportRestockByRange() {
     return;
   }
 
-  const start = new Date(fromInput.value + "T00:00:00");
-  const end = new Date(toInput.value + "T23:59:59");
+  const start = new Date(fromInput.value);
+  const end = new Date(toInput.value);
   if (start > end) {
     showRestockAlert("⚠️ Rentang tanggal tidak valid!");
     return;
@@ -2228,7 +2303,7 @@ function printReceipt(t){
     // --- PERBAIKAN: Gunakan diskon dari item (i.discount) ---
     const perItemDiscount = Math.min(normal, (i.discount || 0) * i.qty);
     const afterPerItem = normal - perItemDiscount;
-    html += `<tr><td>${i.name}</td><td style="text-align:center">${i.qty}</td><td style="text-align:right"><del>Rp ${normal.toLocaleString()}</del><br/>Rp ${afterPerItem.toLocaleString()}${perItemDiscount>0?` <small style=\"color:#16a34a\">(-${formatRupiahNumber(perItemDiscount)})</small>`:''}</td></tr>`
+    html += `<tr><td>${i.name}</td><td style="text-align:center">${i.qty}</td><td style="text-align:right"><del>Rp ${normal.toLocaleString()}</del><br/>Rp ${afterPerItem.toLocaleString()}${perItemDiscount>0?` (-${formatRupiahNumber(perItemDiscount)})`:''}</td></tr>`
   })
   html += `</table><hr/>`
   // summary
@@ -2305,7 +2380,7 @@ function clearSales() {
   // hapus semua data penjualan dari localStorage
   localStorage.removeItem("sales");
 
-  // Kosongkan variabel di memori juga
+  // --- PERBAIKAN: Kosongkan variabel di memori juga ---
   sales = [];
 
   // bersihkan tabel di halaman
@@ -2336,7 +2411,6 @@ function clearSalesByRange() {
   // filter hanya data di luar rentang (biar yang di range kehapus)
   const kept = sales.filter(s => {
     const d = new Date(s.date || s.dateDisplay || "");
-    // PERBAIKAN: Tambahkan tanda kurung yang benar
     return !(d >= new Date(start.setHours(0,0,0,0)) && d <= new Date(end.setHours(23,59,59,999)));
   });
 
@@ -2651,16 +2725,16 @@ function scanSku() {
             if (lastCenter === null) {
               lastCenter = elemCenterY;
               lastChange = Date.now();
-            lastChange = Date.now();
-            // if center not changed significantly for settleMs -> done
-            if (Math.abs(lastCenter - elemCenterY) < 2 && (Date.now() - lastChange) > settleMs) {
-              resolve(true);
-              return;
             } else {
-              lastCenter = elemCenterY;
-              lastChange = Date.now();
+              // if center not changed significantly for settleMs -> done
+              if (Math.abs(lastCenter - elemCenterY) < 2 && (Date.now() - lastChange) > settleMs) {
+                resolve(true);
+                return;
+              } else {
+                lastCenter = elemCenterY;
+                lastChange = Date.now();
+              }
             }
-          }
           } else {
             // not yet centered -> update lastCenter and continue
             lastCenter = elemCenterY;
@@ -2693,7 +2767,7 @@ function scanSku() {
     await new Promise(r => setTimeout(r, 28));
 
     const rect = el.getBoundingClientRect();
-    const padding = 8px;
+    const padding = 8;
     const targetTop = rect.top + window.scrollY - padding;
     const targetLeft = rect.left + window.scrollX - padding;
     const targetWidth = Math.max(80, rect.width + padding * 2) + "px";
@@ -2722,8 +2796,8 @@ function scanSku() {
     `;
 
     // adaptive placement (same as before)...
-    const defaultTooltipWidth = 320px;
-    const tooltipHeight = 140px;
+    const defaultTooltipWidth = 320;
+    const tooltipHeight = 140;
     const spaceBelow = window.innerHeight - rect.bottom;
     let tooltipTop;
     let left = rect.left + window.scrollX;
@@ -2736,39 +2810,39 @@ function scanSku() {
 
       if (spaceRight > tooltipWidth + 20) {
         tooltipTop = topCentered;
-        left = rect.right + window.scrollX + 12px;
+        left = rect.right + window.scrollX + 12;
       } else if (spaceLeft > tooltipWidth + 20) {
         tooltipTop = topCentered;
-        left = rect.left + window.scrollY - tooltipWidth - 12px;
+        left = rect.left + window.scrollY - tooltipWidth - 12;
       } else {
         if (spaceBelow > tooltipHeight + 20) {
-          tooltipTop = rect.bottom + window.scrollY + 12px;
+          tooltipTop = rect.bottom + window.scrollY + 12;
         } else if (rect.top > tooltipHeight + 20) {
-          tooltipTop = rect.top + window.scrollY - tooltipHeight - 12px;
+          tooltipTop = rect.top + window.scrollY - tooltipHeight - 12;
         } else {
           tooltipTop = topCentered;
         }
         left = Math.min(Math.max(rect.left + window.scrollY - 40, 10), window.innerWidth + window.scrollX - (tooltipWidth + 40));
       }
     } else if (step.selector === '#btnStartScan') {
-      tooltipWidth = 260px;
+      tooltipWidth = 260;
       const spaceRight = window.innerWidth - rect.right;
       const spaceLeft = rect.left;
       const verticalCenter = rect.top + window.scrollY + (rect.height / 2);
 
-      if (spaceRight >= tooltipWidth + 12px) {
+      if (spaceRight >= tooltipWidth + 12) {
         tooltipTop = verticalCenter - (tooltipHeight / 2);
-        left = rect.right + window.scrollX + 10px;
-      } else if (spaceLeft >= tooltipWidth + 12px) {
+        left = rect.right + window.scrollX + 10;
+      } else if (spaceLeft >= tooltipWidth + 12) {
         tooltipTop = verticalCenter - (tooltipHeight / 2);
-        left = rect.left + window.scrollY - tooltipWidth - 10px;
+        left = rect.left + window.scrollX - tooltipWidth - 10;
       } else {
-        if (spaceBelow > tooltipHeight + 12px) {
-          tooltipTop = rect.bottom + window.scrollY + 10px;
-        } else if (rect.top > tooltipHeight + 12px) {
-          tooltipTop = rect.top + window.scrollY - tooltipHeight - 12px;
+        if (spaceBelow > tooltipHeight + 12) {
+          tooltipTop = rect.bottom + window.scrollY + 10;
+        } else if (rect.top > tooltipHeight + 12) {
+          tooltipTop = rect.top + window.scrollY - tooltipHeight - 10;
         } else {
-          tooltipTop = verticalCenter;
+          tooltipTop = window.scrollY + window.innerHeight / 2 - tooltipHeight / 2;
         }
         left = rect.left + window.scrollY + (rect.width / 2) - (tooltipWidth / 2);
       }
@@ -2776,18 +2850,20 @@ function scanSku() {
       const minLeft = window.scrollX + 8;
       const maxLeft = window.scrollX + window.innerWidth - (tooltipWidth + 8);
       left = Math.min(Math.max(left, minLeft), Math.max(minLeft, maxLeft));
+
       const minTop = window.scrollY + 8;
       const maxTop = window.scrollY + window.innerHeight - (tooltipHeight + 8);
-      tooltipTop = Math.min(Math.max(tooltipTop, minTop, maxTop));
+      tooltipTop = Math.min(Math.max(tooltipTop, minTop), Math.max(minTop, maxTop));
+
       tooltip.style.maxWidth = tooltipWidth + "px";
     } else {
       tooltipWidth = defaultTooltipWidth;
       tooltip.style.maxWidth = tooltipWidth + "px";
 
       if (spaceBelow > tooltipHeight + 20) {
-        tooltipTop = rect.bottom + window.scrollY + 12px;
+        tooltipTop = rect.bottom + window.scrollY + 12;
       } else if (rect.top > tooltipHeight + 20) {
-        tooltipTop = rect.top + window.scrollY - tooltipHeight - 12px;
+        tooltipTop = rect.top + window.scrollY - tooltipHeight - 12;
       } else {
         tooltipTop = window.scrollY + window.innerHeight / 2 - tooltipHeight / 2;
       }
@@ -2874,15 +2950,26 @@ function loadSales(showNotification = true) {
 
   tbl.innerHTML = "";
 
+  // 1. Validasi: Cek apakah ada filter yang dipilih
+  if (!from && !to) {
+    if (showNotification) {
+      showToast("⚠️ Silahkan pilih rentan tanggal untuk menampilkan laporan penjualan.");
+    }
+    // Tampilkan pesan di tabel
+    tbl.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:10px" class="muted">Pilih filter tanggal untuk melihat laporan.</td></tr>`;
+    return;
+  }
+
   let counter = 1;
   let foundData = false;
 
-  // Filter data berdasarkan input
+  // 2. Filter data berdasarkan input
   let filteredSales = sales.filter(s => s.finalized);
 
   if (from || to) {
-    const startDate = from ? new Date(from + "T00:00:00") : new Date('1970-01-01');
-    const endDate = to ? new Date(to + "T23:59:59") : new Date('2999-12-31');
+    const startDate = from ? new Date(from) : new Date('1970-01-01');
+    const endDate = to ? new Date(to) : new Date('2999-12-31');
+    endDate.setHours(23, 59, 59, 999);
 
     filteredSales = filteredSales.filter(s => {
       const dObj = new Date(s.date);
@@ -2890,7 +2977,7 @@ function loadSales(showNotification = true) {
     });
   }
 
-  // Tampilkan hasil yang sudah difilter
+  // 3. Tampilkan hasil yang sudah difilter
   if (filteredSales.length === 0) {
     tbl.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:10px" class="muted">Tidak ada data penjualan pada periode yang dipilih.</td></tr>`;
     if (showNotification) {
@@ -2960,25 +3047,23 @@ function renderFinalStock(){
 
 /* ---------- INIT ---------- */
 function openTab(id){
-  // Hapus status 'active' dari semua tombol dan konten tab
+  // remove active state
   document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
   document.querySelectorAll(".tab-content").forEach(c=>c.classList.remove("active"));
 
-  // Tandai tombol tab yang dipilih sebagai 'active'
-  // Selector ini dirancang agar kuat terhadap perubahan kecil pada atribut onclick
+  // set active on the button (robust selector)
   let btn = document.querySelector(`.tab-btn[onclick*="openTab('${id}')"]`);
   if(!btn){
-    // Fallback jika selector utama tidak cocok
+    // fallback: match double quotes variant
     btn = document.querySelector(`.tab-btn[onclick*='openTab("${id}")']`);
   }
   if(btn) btn.classList.add("active");
 
-  // Tampilkan konten tab yang dipilih
+  // show content
   const content = document.getElementById(id);
   if(content) content.classList.add("active");
-
-  // Muat data yang sesuai untuk tab yang aktif
-  // Parameter 'false' mencegah notifikasi toast muncul saat berganti tab
+  
+  // Load data based on active tab
   if(id === 'penjualan') {
     loadSales(false); 
   } else if(id === 'restock') {
@@ -2989,60 +3074,50 @@ function openTab(id){
 }
 
 function init(){
-  // Setel preferensi printer dan status awal
-  const autoPrintEl = document.getElementById('autoPrint');
-  if(autoPrintEl) autoPrintEl.checked = false;
-  loadPrinterPreference();
+  const autoPrintEl = document.getElementById('autoPrint')
+  if(autoPrintEl) autoPrintEl.checked = false
 
-  // Periksa apakah ada transaksi yang tertunda dari sesi sebelumnya
-  pendingPaidInvoice = localStorage.getItem('pendingPaidInvoice') || pendingPaidInvoice;
+  loadPrinterPreference()
 
-  // Migrasi data penjualan lama untuk menambahkan format tanggal yang mudah dibaca (dateDisplay)
-  let updated = false;
+  pendingPaidInvoice = localStorage.getItem('pendingPaidInvoice') || pendingPaidInvoice
+
+  // migrate dateDisplay if needed
+  let updated = false
   sales.forEach(s => {
     if(s.date && !s.dateDisplay){
-      let dObj = new Date(s.date);
+      let dObj = new Date(s.date)
       if(isNaN(dObj)){
-        // Coba parse format manual "YYYY-MM-DD HH:mm:ss"
-        const parts = s.date.split(" ");
+        const parts = s.date.split(" ")
         if(parts.length === 2){
-          const [d,m,y] = parts[0].split("-");
-          const [hh,mm,ss] = parts[1].split(":");
+          const [d,m,y] = parts[0].split("-")
+          const [hh,mm,ss] = parts[1].split(":")
           if(d && m && y){
-            dObj = new Date(y, parseInt(m)-1, d, hh||0, mm||0, ss||0);
+            dObj = new Date(y, parseInt(m)-1, d, hh||0, mm||0, ss||0)
           }
         }
       }
       if(dObj && !isNaN(dObj)){
-        s.dateDisplay = dObj.toLocaleString();
-        updated = true;
+        s.dateDisplay = dObj.toLocaleString()
+        updated = true
       } else {
-        s.dateDisplay = s.date; // Fallback jika parsing gagal
-        updated = true;
+        s.dateDisplay = s.date
+        updated = true
       }
     }
-  });
-  if(updated) localStorage.setItem("sales", JSON.stringify(sales));
+  })
+  if(updated) localStorage.setItem("sales", JSON.stringify(sales))
 
-  // Render komponen UI utama untuk pertama kali
-  render(); // Daftar produk
-  renderFinalStock(); // Tabel stok akhir
-  renderProductGrid(); // Grid produk untuk penjualan
-
-  // **PERBAIKAN**: Muat data laporan di awal agar tabel tidak kosong saat pertama kali dibuka
-  // Parameter 'false' mencegah notifikasi "Data ditampilkan" saat halaman dimuat.
+  render(); renderFinalStock(); setInterval(renderFinalStock,5000)
+  renderProductGrid(); // Initialize product grid
+  
+  // Muat data laporan di awal agar tabel tidak kosong saat pertama kali dibuka
   loadSales(false);
   loadRestock(false);
-
-  // Perbarui data stok akhir secara berkala setiap 5 detik
-  setInterval(renderFinalStock, 5000);
   
-  // Tampilkan overlay panduan jika ada
   const guideOv = document.getElementById("guideOverlay");
   if(guideOv) guideOv.style.display = "flex";
 }
 
-// Jalankan fungsi inisialisasi saat semua skrip dan DOM siap
 init();
 
 /* ======= CLIENT STRONG-HARDENING ======= */
@@ -3120,7 +3195,7 @@ init();
       if(document.getElementById('__devtrap')) return;
       const el = document.createElement('div');
       el.id='__devtrap';
-      el.style.cssText='position:fixed;top:8px;left:50%;transform:translateX(-50%);background:#ffefefef;color:#900;padding:8px;border-radius:6px;z-index:2147483647;font-weight:700';
+      el.style.cssText='position:fixed;top:8px;left:50%;transform:translateX(-50%);background:#ffefef;color:#900;padding:8px;border-radius:6px;z-index:2147483647;font-weight:700';
       el.innerText='Warning: DevTools detected — actions may be blocked';
       document.body.appendChild(el);
       // blur & slow down
@@ -3132,7 +3207,7 @@ init();
     }
     function handleDevClose(){
       const el=document.getElementById('__devtrap'); if(el) el.remove();
-      document.body.style.filter = '';
+      document.body.style.filter='';
     }
     setInterval(check, 700);
     window.addEventListener('resize', check, {passive:true});
@@ -3238,7 +3313,7 @@ init();
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+token },
       body: JSON.stringify({ action: actionName, payload })
-    }).then(r=>r=>r.json());
+    }).then(r=>r.json());
   };
 
   // final notice
@@ -3250,7 +3325,3 @@ init();
 </script>
 </body>
 </html>
-
-
-
-
