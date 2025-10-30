@@ -3224,6 +3224,31 @@ function loadSales(showNotification = true) {
   }
 }
 
+// Tambahkan di bagian bawah script
+function checkMidtransConnection() {
+  console.log("🔍 Checking Midtrans connection...");
+  
+  // Cek apakah Snap.js sudah terload
+  if (typeof snap === 'undefined') {
+    console.error("❌ Midtrans Snap.js not loaded");
+    return false;
+  }
+  console.log("✅ Midtrans Snap.js loaded");
+  
+  // Cek client key
+  const scriptTag = document.querySelector('script[data-client-key]');
+  if (scriptTag) {
+    console.log("✅ Client Key found:", scriptTag.getAttribute('data-client-key'));
+  } else {
+    console.error("❌ Client Key not found");
+  }
+  
+  return true;
+}
+
+// Jalankan saat halaman dimuat
+window.addEventListener('load', checkMidtransConnection);
+
 /* export only finalized sales */
 function exportSales(){
   const finalized = sales.filter(s => s.finalized)
@@ -3336,3 +3361,4 @@ init();
 </script>
 </body>
 </html>
+
