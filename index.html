@@ -8,7 +8,7 @@
   <!-- Tambahkan ini di dalam tag <head> -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-  <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="Mid-client-o-yLQxoB7_5R2sTJ"></script>
+  <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="Mid-client-0xTl1KKhM9Bqq_Bp"></script>
   
   <style>
   :root {
@@ -2131,20 +2131,160 @@ function exportRestockByRange() {
   showRestockAlert("✅ File CSV berdasarkan rentang tanggal berhasil diunduh.");
 }
 
-/* ---------- PAYMENT FLOW (PERBAIKAN UTAMA) ---------- */
-// PERBAIKAN: Fungsi checkout yang lebih sederhana tanpa Midtrans untuk testing
-function checkout(){
+/* ---------- PAYMENT FLOW DENGAN MIDTRANS ---------- */
+// Fungsi checkout yang memanggil API Midtrans
+async function checkout(){
   if(cart.length === 0) return alert("Keranjang kosong")
   
-  // Tampilkan modal pembayaran langsung tanpa Midtrans
-  document.getElementById('paymentModal').style.display = 'flex'
-  
-  // Update total di modal pembayaran
-  const totals = computeCartTotals();
-  document.getElementById('payTotal').textContent = "Rp " + totals.finalTotal.toLocaleString();
+  try {
+    // 1. Hitung total
+    const totals = computeCartTotals();
+    const total = totals.finalTotal;
+    
+    // 2. Tampilkan loading
+    showToast("Memproses pembayaran...");
+    document.getElementById('checkoutBtn').disabled = true;
+    
+    // 3. Minta token ke backend
+    const response = await fetch('https://asia-southeast1-oleh2in-pos.cloudfunctions.net/api/payment/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        cart, 
+        total,
+        customer_details: {
+          first_name: "Customer",
+          email: "customer@example.com",
+          phone: "08123456789"
+        }
+      })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Gagal memproses pembayaran");
+    }
+    
+    const result = await response.json();
+    
+    if (result.error) {
+      throw new Error(result.error);
+    }
+    
+    // 4. Buka popup pembayaran Midtrans dengan token dari server
+    snap.pay(result.token, {
+      onSuccess: function (result) {
+        handlePaymentSuccess(result);
+      },
+      onPending: function (result) {
+        showToast("Pembayaran sedang diproses.");
+        document.getElementById('checkoutBtn').disabled = false;
+      },
+      onError: function (result) {
+        console.error("Payment error:", result);
+        showToast("Pembayaran gagal. Silakan coba lagi.");
+        document.getElementById('checkoutBtn').disabled = false;
+      },
+      onClose: function () {
+        document.getElementById('checkoutBtn').disabled = false;
+      }
+    });
+    
+  } catch (error) {
+    console.error("Checkout error:", error);
+    showToast(error.message || "Terjadi kesalahan saat memproses pembayaran");
+    document.getElementById('checkoutBtn').disabled = false;
+  }
 }
 
-// PERBAIKAN: Fungsi konfirmasi pembayaran yang bekerja tanpa Midtrans
+// Fungsi untuk handle pembayaran sukses
+async function handlePaymentSuccess(result) {
+  try {
+    showToast("Pembayaran berhasil! Memproses transaksi...");
+    
+    // Buat invoice dan transaction
+    const invoice = 'INV' + Date.now();
+    const now = new Date();
+    const date = now.toISOString();
+    const dateDisplay = now.toLocaleString();
+    const totals = computeCartTotals();
+    const total = totals.finalTotal;
+
+    const transaction = {
+      invoice,
+      date,
+      dateDisplay,
+      items: JSON.parse(JSON.stringify(cart)), // snapshot of items
+      total,
+      discountTotalPercent: discountTotalPercent,
+      totalsBreakdown: {
+        subtotalBefore: totals.subtotalBefore,
+        perProductDiscountTotal: totals.perProductDiscountTotal,
+        percentDiscountAmount: totals.percentDiscountAmount,
+        finalTotal: totals.finalTotal
+      },
+      method: "midtrans",
+      status: 'paid',
+      finalized: false,
+      completedAt: null,
+      payment_details: result // Simpan detail pembayaran dari Midtrans
+    };
+
+    // 1) Kurangi stok produk
+    for (const item of transaction.items) {
+      const productRef = database.ref('products/' + item.sku);
+      await productRef.transaction(currentStock => {
+        if (currentStock === null) return null;
+        return Math.max(0, currentStock - item.qty);
+      });
+    }
+
+    // 2) Simpan transaksi ke Firebase
+    await database.ref('sales/' + invoice).set(transaction);
+
+    // 3) Tandai sebagai pending invoice
+    pendingPaidInvoice = invoice;
+    localStorage.setItem('pendingPaidInvoice', invoice);
+
+    // 4) Kosongkan keranjang dan refresh UI
+    cart = [];
+    renderCart();
+    renderFinalStock();
+    loadSales();
+
+    // 5) Tampilkan preview struk
+    openReceiptPreview(invoice);
+
+    showToast("Pembayaran berhasil! Cetak struk atau selesaikan penjualan.");
+    document.getElementById('checkoutBtn').disabled = false;
+  } catch (error) {
+    console.error("Error handling payment success:", error);
+    showToast("Gagal memproses pembayaran. Silakan hubungi admin.");
+    document.getElementById('checkoutBtn').disabled = false;
+  }
+}
+  
+/* close payment modal */
+function closePaymentModal(){
+  document.getElementById('paymentModal').style.display = 'none'
+  selectedPaymentMethod = null
+}
+
+/* select payment method */
+function selectPaymentMethod(method, el){
+  selectedPaymentMethod = method
+  document.querySelectorAll('.pm-btn').forEach(b=>b.classList.remove('active'))
+  if(el) el.classList.add('active')
+  let info = ''
+  if(method === 'cash') info = 'Pembayaran tunai: Terima uang tunai dari pelanggan dan kembalikan jika perlu.'
+  if(method === 'transfer') info = 'Transfer bank: Tunjukkan nomor VA / rekening ke pembeli. Konfirmasi manual atau otomatis melalui gateway.'
+  if(method === 'card') info = 'Kartu/EDC: Lakukan pembayaran melalui mesin EDC (fisik).'
+  if(method === 'qris') info = 'QRIS / e-wallet: Tampilkan QR untuk dipindai pembeli. Setelah terbayar, konfirmasi.'
+  const totals = computeCartTotals();
+  document.getElementById('paymentInfoBox').innerHTML = `<div class="pay-instr">${info}</div><div>Total: <strong id="payTotal">Rp ${totals.finalTotal.toLocaleString()}</strong></div>`
+}
+
+/* confirm payment: immediately reduce stock, create pending transaction, show receipt preview (print allowed), but DO NOT finalize sale yet */
 async function confirmPayment(){
   if(!selectedPaymentMethod) return alert("Pilih metode pembayaran terlebih dahulu")
   if(cart.length === 0) return alert("Keranjang kosong")
@@ -2216,26 +2356,6 @@ async function confirmPayment(){
     btn.disabled = false;
     btn.textContent = "Konfirmasi Pembayaran";
   }
-}
-  
-/* close payment modal */
-function closePaymentModal(){
-  document.getElementById('paymentModal').style.display = 'none'
-  selectedPaymentMethod = null
-}
-
-/* select payment method */
-function selectPaymentMethod(method, el){
-  selectedPaymentMethod = method
-  document.querySelectorAll('.pm-btn').forEach(b=>b.classList.remove('active'))
-  if(el) el.classList.add('active')
-  let info = ''
-  if(method === 'cash') info = 'Pembayaran tunai: Terima uang tunai dari pelanggan dan kembalikan jika perlu.'
-  if(method === 'transfer') info = 'Transfer bank: Tunjukkan nomor VA / rekening ke pembeli. Konfirmasi manual atau otomatis melalui gateway.'
-  if(method === 'card') info = 'Kartu/EDC: Lakukan pembayaran melalui mesin EDC (fisik).'
-  if(method === 'qris') info = 'QRIS / e-wallet: Tampilkan QR untuk dipindai pembeli. Setelah terbayar, konfirmasi.'
-  const totals = computeCartTotals();
-  document.getElementById('paymentInfoBox').innerHTML = `<div class="pay-instr">${info}</div><div>Total: <strong id="payTotal">Rp ${totals.finalTotal.toLocaleString()}</strong></div>`
 }
 
 /* open receipt preview modal for given invoice */
