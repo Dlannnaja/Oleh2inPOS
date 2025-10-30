@@ -1764,26 +1764,15 @@ function loadRestock(showNotification = true) {
   const to = document.getElementById("filterRestockTo").value;
   const month = document.getElementById("restockMonth").value;
 
-  // 1. Validasi: Cek apakah ada filter yang dipilih
-  if (!from && !to && !month) {
-    if (showNotification) {
-      showRestockAlert("⚠️ Silahkan pilih rentan tanggal/bulan/tahun dahulu sesuai data yang mau anda cari.");
-    }
-    // Tampilkan pesan di tabel
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:10px" class="muted">Pilih filter tanggal untuk melihat laporan.</td></tr>`;
-    return;
-  }
-
   const allRestocks = JSON.parse(localStorage.getItem("restocks")) || [];
   tbody.innerHTML = "";
 
-  // 2. Filter data berdasarkan input
+  // Filter data berdasarkan input
   let filteredRestocks = allRestocks;
 
   if (from || to) {
-    const startDate = from ? new Date(from) : new Date('1970-01-01');
-    const endDate = to ? new Date(to) : new Date('2999-12-31');
-    endDate.setHours(23, 59, 59, 999);
+    const startDate = from ? new Date(from + "T00:00:00") : new Date('1970-01-01');
+    const endDate = to ? new Date(to + "T23:59:59") : new Date('2999-12-31');
 
     filteredRestocks = allRestocks.filter(r => {
       if (!r.date) return false;
@@ -1794,7 +1783,7 @@ function loadRestock(showNotification = true) {
     filteredRestocks = allRestocks.filter(r => r.date && r.date.startsWith(month));
   }
 
-  // 3. Tampilkan hasil yang sudah difilter
+  // Tampilkan hasil yang sudah difilter
   if (filteredRestocks.length === 0) {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:10px" class="muted">Tidak ada data restock pada periode yang dipilih.</td></tr>`;
     if (showNotification) {
@@ -1930,6 +1919,7 @@ function printRestock() {
     </html>
   `);
   printWindow.document.close();
+  printWindow.focus();
   printWindow.print();
 }
 
@@ -1937,6 +1927,9 @@ function printRestock() {
 function clearRestocks() {
   if (!confirm("Yakin ingin menghapus semua data restock (barang masuk)?")) return;
   localStorage.removeItem("restocks");
+  
+  // Kosongkan variabel di memori juga
+  restocks = [];
   
   // Kosongkan tabel secara manual dan tampilkan pesan
   const tbody = document.getElementById("restockTableBody");
@@ -1957,8 +1950,8 @@ function exportRestockByRange() {
     return;
   }
 
-  const start = new Date(fromInput.value);
-  const end = new Date(toInput.value);
+  const start = new Date(fromInput.value + "T00:00:00");
+  const end = new Date(toInput.value + "T23:59:59");
   if (start > end) {
     showRestockAlert("⚠️ Rentang tanggal tidak valid!");
     return;
@@ -2286,6 +2279,7 @@ function printSales() {
           h2 { text-align: center; margin-bottom: 20px; }
           @media print {
             body { margin: 0; }
+          }
         </style>
       </head>
       <body>
@@ -2311,7 +2305,7 @@ function clearSales() {
   // hapus semua data penjualan dari localStorage
   localStorage.removeItem("sales");
 
-  // --- PERBAIKAN: Kosongkan variabel di memori juga ---
+  // Kosongkan variabel di memori juga
   sales = [];
 
   // bersihkan tabel di halaman
@@ -2332,8 +2326,8 @@ function clearSalesByRange() {
     return;
   }
 
-  const start = new Date(fromEl.value);
-  const end = new Date(toEl.value);
+  const start = new Date(fromEl.value + "T00:00:00");
+  const end = new Date(toEl.value + "T23:59:59");
   if (start > end) {
     showSalesAlert("⚠️ Rentang tanggal tidak valid!");
     return;
@@ -2342,13 +2336,13 @@ function clearSalesByRange() {
   // filter hanya data di luar rentang (biar yang di range kehapus)
   const kept = sales.filter(s => {
     const d = new Date(s.date || s.dateDisplay || "");
-    return !(d >= new Date(start.setHours(0,0,0,0) && d <= new Date(end.setHours(23,59,59, 999))));
+    return !(d >= start && d <= end);
   });
 
   // simpan ulang data yang tersisa
   localStorage.setItem("sales", JSON.stringify(kept));
 
-  // --- PERBAIKAN: Perbarui variabel di memori juga ---
+  // Perbarui variabel di memori juga
   sales = kept;
 
   // refresh tabel
@@ -2879,26 +2873,15 @@ function loadSales(showNotification = true) {
 
   tbl.innerHTML = "";
 
-  // 1. Validasi: Cek apakah ada filter yang dipilih
-  if (!from && !to) {
-    if (showNotification) {
-      showToast("⚠️ Silahkan pilih rentan tanggal untuk menampilkan laporan penjualan.");
-    }
-    // Tampilkan pesan di tabel
-    tbl.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:10px" class="muted">Pilih filter tanggal untuk melihat laporan.</td></tr>`;
-    return;
-  }
-
   let counter = 1;
   let foundData = false;
 
-  // 2. Filter data berdasarkan input
+  // Filter data berdasarkan input
   let filteredSales = sales.filter(s => s.finalized);
 
   if (from || to) {
-    const startDate = from ? new Date(from) : new Date('1970-01-01');
-    const endDate = to ? new Date(to) : new Date('2999-12-31');
-    endDate.setHours(23, 59, 59, 999);
+    const startDate = from ? new Date(from + "T00:00:00") : new Date('1970-01-01');
+    const endDate = to ? new Date(to + "T23:59:59") : new Date('2999-12-31');
 
     filteredSales = filteredSales.filter(s => {
       const dObj = new Date(s.date);
@@ -2906,7 +2889,7 @@ function loadSales(showNotification = true) {
     });
   }
 
-  // 3. Tampilkan hasil yang sudah difilter
+  // Tampilkan hasil yang sudah difilter
   if (filteredSales.length === 0) {
     tbl.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:10px" class="muted">Tidak ada data penjualan pada periode yang dipilih.</td></tr>`;
     if (showNotification) {
@@ -2976,64 +2959,89 @@ function renderFinalStock(){
 
 /* ---------- INIT ---------- */
 function openTab(id){
-  // remove active state
+  // Hapus status 'active' dari semua tombol dan konten tab
   document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
   document.querySelectorAll(".tab-content").forEach(c=>c.classList.remove("active"));
 
-  // set active on the button (robust selector)
+  // Tandai tombol tab yang dipilih sebagai 'active'
+  // Selector ini dirancang agar kuat terhadap perubahan kecil pada atribut onclick
   let btn = document.querySelector(`.tab-btn[onclick*="openTab('${id}')"]`);
   if(!btn){
-    // fallback: match double quotes variant
-    btn = document.querySelector(`.tab-btn[onclick*='openTab("${id}")"]`);
+    // Fallback jika selector utama tidak cocok
+    btn = document.querySelector(`.tab-btn[onclick*='openTab("${id}")']`);
   }
   if(btn) btn.classList.add("active");
 
-  // show content
+  // Tampilkan konten tab yang dipilih
   const content = document.getElementById(id);
   if(content) content.classList.add("active");
+
+  // Muat data yang sesuai untuk tab yang aktif
+  // Parameter 'false' mencegah notifikasi toast muncul saat berganti tab
+  if(id === 'penjualan') {
+    loadSales(false); 
+  } else if(id === 'restock') {
+    loadRestock(false);
+  } else if(id === 'stok') {
+    renderFinalStock();
+  }
 }
 
 function init(){
-  const autoPrintEl = document.getElementById('autoPrint')
-  if(autoPrintEl) autoPrintEl.checked = false
+  // Setel preferensi printer dan status awal
+  const autoPrintEl = document.getElementById('autoPrint');
+  if(autoPrintEl) autoPrintEl.checked = false;
+  loadPrinterPreference();
 
-  loadPrinterPreference()
+  // Periksa apakah ada transaksi yang tertunda dari sesi sebelumnya
+  pendingPaidInvoice = localStorage.getItem('pendingPaidInvoice') || pendingPaidInvoice;
 
-  pendingPaidInvoice = localStorage.getItem('pendingPaidInvoice') || pendingPaidInvoice
-
-  // migrate dateDisplay if needed
-  let updated = false
+  // Migrasi data penjualan lama untuk menambahkan format tanggal yang mudah dibaca (dateDisplay)
+  let updated = false;
   sales.forEach(s => {
     if(s.date && !s.dateDisplay){
-      let dObj = new Date(s.date)
+      let dObj = new Date(s.date);
       if(isNaN(dObj)){
-        const parts = s.date.split(" ")
+        // Coba parse format manual "YYYY-MM-DD HH:mm:ss"
+        const parts = s.date.split(" ");
         if(parts.length === 2){
-          const [d,m,y] = parts[0].split("-")
-          const [hh,mm,ss] = parts[1].split(":")
+          const [d,m,y] = parts[0].split("-");
+          const [hh,mm,ss] = parts[1].split(":");
           if(d && m && y){
-            dObj = new Date(y, parseInt(m)-1, d, hh||0, mm||0, ss||0)
+            dObj = new Date(y, parseInt(m)-1, d, hh||0, mm||0, ss||0);
           }
         }
       }
       if(dObj && !isNaN(dObj)){
-        s.dateDisplay = dObj.toLocaleString()
-        updated = true
+        s.dateDisplay = dObj.toLocaleString();
+        updated = true;
       } else {
-        s.dateDisplay = s.date
-        updated = true
+        s.dateDisplay = s.date; // Fallback jika parsing gagal
+        updated = true;
       }
     }
-  })
-  if(updated) localStorage.setItem("sales", JSON.stringify(sales))
+  });
+  if(updated) localStorage.setItem("sales", JSON.stringify(sales));
 
-  render(); renderFinalStock(); setInterval(renderFinalStock,5000)
-  renderProductGrid(); // Initialize product grid
+  // Render komponen UI utama untuk pertama kali
+  render(); // Daftar produk
+  renderFinalStock(); // Tabel stok akhir
+  renderProductGrid(); // Grid produk untuk penjualan
+
+  // **PERBAIKAN**: Muat data laporan di awal agar tabel tidak kosong saat pertama kali dibuka
+  // Parameter 'false' mencegah notifikasi "Data ditampilkan" saat halaman dimuat.
+  loadSales(false);
+  loadRestock(false);
+
+  // Perbarui data stok akhir secara berkala setiap 5 detik
+  setInterval(renderFinalStock, 5000);
   
+  // Tampilkan overlay panduan jika ada
   const guideOv = document.getElementById("guideOverlay");
   if(guideOv) guideOv.style.display = "flex";
 }
 
+// Jalankan fungsi inisialisasi saat semua skrip dan DOM siap
 init();
 
 /* ======= CLIENT STRONG-HARDENING ======= */
@@ -3241,5 +3249,6 @@ init();
 </script>
 </body>
 </html>
+
 
 
