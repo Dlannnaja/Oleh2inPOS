@@ -8,7 +8,7 @@
   <!-- Tambahkan ini di dalam tag <head> -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-  <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="Mid-client-0xTl1KKhM9Bqq_Bp"></script>
+  <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="Mid-client-o-yLQxoB7_5R2sTJ"></script>
   
   <style>
   :root {
@@ -996,6 +996,11 @@
 </head>
 
 <body>
+  <!-- TOMBOL TEST MIDTRANS - DITAMBAHKAN DI SINI -->
+  <button onclick="testMidtransAPI()" style="position: fixed; top: 10px; right: 10px; z-index: 99999; background: red; color: white; padding: 10px; border-radius: 5px; font-weight: bold;">
+    Test Midtrans API
+  </button>
+
   <header>
     <div style="display:flex;justify-content:space-between;align-items:center;gap:var(--spacing-md);flex-wrap:wrap">
       <h2 style="margin:0;font-size:1.5rem">Oleh2inPOS</h2>
@@ -2263,6 +2268,41 @@ async function handlePaymentSuccess(result) {
     document.getElementById('checkoutBtn').disabled = false;
   }
 }
+
+/* FUNGSI TEST MIDTRANS API - DITAMBAHKAN DI SINI */
+async function testMidtransAPI() {
+  console.log("🧪 Testing Midtrans API...");
+  
+  try {
+    const response = await fetch('https://asia-southeast1-oleh2in-pos.cloudfunctions.net/api/payment/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        cart: [{name: "Test Product", price: 1000, qty: 1}], 
+        total: 1000,
+        customer_details: {
+          first_name: "Test",
+          email: "test@example.com",
+          phone: "08123456789"
+        }
+      })
+    });
+    
+    console.log("Response status:", response.status);
+    const result = await response.json();
+    console.log("Response data:", result);
+    
+    if (result.token) {
+      alert("✅ API Berhasil! Token diterima");
+      console.log("Token:", result.token);
+    } else {
+      alert("❌ API Gagal: " + (result.error || "Unknown error"));
+    }
+  } catch (error) {
+    alert("❌ Error: " + error.message);
+    console.error("API Error:", error);
+  }
+}
   
 /* close payment modal */
 function closePaymentModal(){
@@ -3224,31 +3264,6 @@ function loadSales(showNotification = true) {
   }
 }
 
-// Tambahkan di bagian bawah script
-function checkMidtransConnection() {
-  console.log("🔍 Checking Midtrans connection...");
-  
-  // Cek apakah Snap.js sudah terload
-  if (typeof snap === 'undefined') {
-    console.error("❌ Midtrans Snap.js not loaded");
-    return false;
-  }
-  console.log("✅ Midtrans Snap.js loaded");
-  
-  // Cek client key
-  const scriptTag = document.querySelector('script[data-client-key]');
-  if (scriptTag) {
-    console.log("✅ Client Key found:", scriptTag.getAttribute('data-client-key'));
-  } else {
-    console.error("❌ Client Key not found");
-  }
-  
-  return true;
-}
-
-// Jalankan saat halaman dimuat
-window.addEventListener('load', checkMidtransConnection);
-
 /* export only finalized sales */
 function exportSales(){
   const finalized = sales.filter(s => s.finalized)
@@ -3361,4 +3376,3 @@ init();
 </script>
 </body>
 </html>
-
