@@ -10,30 +10,10 @@
   <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="Mid-client-0xTl1KKhM9Bqq_Bp"></script>
   
   <!-- Tambahkan Firebase SDK -->
-  <script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
-
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyB-VkaSBGsaa7cSmoPKL6gIZ48oKNZB5yo",
-    authDomain: "oleh2in-pos-f5bb3.firebaseapp.com",
-    databaseURL: "https://oleh2in-pos-f5bb3-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "oleh2in-pos-f5bb3",
-    storageBucket: "oleh2in-pos-f5bb3.firebasestorage.app",
-    messagingSenderId: "1027258393129",
-    appId: "1:1027258393129:web:b122ed2414d62eefb0b238",
-    measurementId: "G-960F31Y3HS"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-  </script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-analytics-compat.js"></script>
   
   <style>
   :root {
@@ -1408,15 +1388,16 @@
 
 <script>
 /* ---------- Firebase Configuration ---------- */
-// Ganti dengan konfigurasi Firebase Anda
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-  authDomain: "your-project-id.firebaseapp.com",
-  databaseURL: "https://your-project-id-default-rtdb.firebaseio.com",
-  projectId: "your-project-id",
-  storageBucket: "your-project-id.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef123456"
+  apiKey: "AIzaSyB-VkaSBGsaa7cSmoPKL6gIZ48oKNZB5yo",
+  authDomain: "oleh2in-pos-f5bb3.firebaseapp.com",
+  databaseURL: "https://oleh2in-pos-f5bb3-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "oleh2in-pos-f5bb3",
+  storageBucket: "oleh2in-pos-f5bb3.firebasestorage.app",
+  messagingSenderId: "1027258393129",
+  appId: "1:1027258393129:web:b122ed2414d62eefb0b238",
+  measurementId: "G-960F31Y3HS"
 };
 
 // Initialize Firebase
@@ -1521,6 +1502,9 @@ function updateConnectionStatus() {
 
 /* ---------- Firebase Data Functions ---------- */
 function loadProductsFromFirebase() {
+  // Tambahkan loading indicator
+  document.getElementById('productGrid').innerHTML = '<div class="spinner"></div>';
+  
   database.ref('products').once('value')
     .then((snapshot) => {
       if (snapshot.exists()) {
@@ -1530,12 +1514,20 @@ function loadProductsFromFirebase() {
         updateRestockDropdown();
         showToast("Produk berhasil dimuat dari database");
       } else {
+        products = []; // Pastikan array tidak undefined
+        render();
+        renderProductGrid();
+        updateRestockDropdown();
         showToast("Belum ada data produk di database");
       }
     })
     .catch((error) => {
       console.error("Error loading products:", error);
       showToast("Gagal memuat produk: " + error.message);
+      products = []; // Pastikan array tidak undefined
+      render();
+      renderProductGrid();
+      updateRestockDropdown();
     });
 }
 
@@ -1556,10 +1548,13 @@ function loadSalesFromFirebase() {
       if (snapshot.exists()) {
         sales = Object.values(snapshot.val());
         loadSales(false);
+      } else {
+        sales = []; // Pastikan array tidak undefined
       }
     })
     .catch((error) => {
       console.error("Error loading sales:", error);
+      sales = []; // Pastikan array tidak undefined
     });
 }
 
@@ -1579,13 +1574,16 @@ function loadRestocksFromFirebase() {
       if (snapshot.exists()) {
         restocks = Object.values(snapshot.val());
         loadRestock(false);
+      } else {
+        restocks = []; // Pastikan array tidak undefined
       }
     })
     .catch((error) => {
       console.error("Error loading restocks:", error);
+      restocks = []; // Pastikan array tidak undefined
     });
 }
-
+  
 function saveRestocksToFirebase() {
   database.ref('restocks').set(restocks)
     .then(() => {
@@ -1605,6 +1603,11 @@ function setupFirebaseListeners() {
       render();
       renderProductGrid();
       updateRestockDropdown();
+    } else {
+      products = [];
+      render();
+      renderProductGrid();
+      updateRestockDropdown();
     }
   });
 
@@ -1615,6 +1618,11 @@ function setupFirebaseListeners() {
       if (document.getElementById('penjualan').classList.contains('active')) {
         loadSales(false);
       }
+    } else {
+      sales = [];
+      if (document.getElementById('penjualan').classList.contains('active')) {
+        loadSales(false);
+      }
     }
   });
 
@@ -1622,6 +1630,11 @@ function setupFirebaseListeners() {
   database.ref('restocks').on('value', (snapshot) => {
     if (snapshot.exists()) {
       restocks = Object.values(snapshot.val());
+      if (document.getElementById('restock').classList.contains('active')) {
+        loadRestock(false);
+      }
+    } else {
+      restocks = [];
       if (document.getElementById('restock').classList.contains('active')) {
         loadRestock(false);
       }
@@ -1637,6 +1650,9 @@ function setupFirebaseListeners() {
 
 /* ---------- Product CRUD Functions ---------- */
 function submitProduct(){
+  // Pastikan products tidak undefined
+  if (!products) products = [];
+  
   const sku = document.getElementById("sku").value.trim()
   const name = document.getElementById("name").value.trim()
   const price = parseInt(document.getElementById("price").value)
@@ -1669,6 +1685,9 @@ function resetForm(){
 }
 
 function editProduct(sku){
+  // Pastikan products tidak undefined
+  if (!products) products = [];
+  
   const p=products.find(x=>x.sku===sku)
   if(!p) return
   document.getElementById("sku").value=p.sku
@@ -1681,6 +1700,10 @@ function editProduct(sku){
 
 function deleteProduct(sku){
   if(!confirm("Hapus produk ini?")) return
+  
+  // Pastikan products tidak undefined
+  if (!products) products = [];
+  
   products=products.filter(p=>p.sku!==sku)
   saveProductsToFirebase();
   render()
@@ -1689,6 +1712,10 @@ function deleteProduct(sku){
 function updateRestockDropdown(){
   const sel=document.getElementById("restockName")
   if(!sel) return
+  
+  // Pastikan products tidak undefined
+  if (!products) products = [];
+  
   sel.innerHTML='<option value="">Pilih Produk...</option>'
   products.forEach(p=>{
     const opt=document.createElement('option')
@@ -1782,6 +1809,9 @@ function addProductFromGrid(sku) {
 function restockProduct(event) {
   if (event) event.preventDefault();
 
+  // Pastikan products tidak undefined
+  if (!products) products = [];
+  
   const sku = document.getElementById("restockName").value;
   const qtyInput = document.getElementById("restockQty");
   const qty = parseInt(qtyInput.value);
@@ -1800,6 +1830,9 @@ function restockProduct(event) {
   p.qty += qty;
   saveProductsToFirebase();
 
+  // Pastikan restocks tidak undefined
+  if (!restocks) restocks = [];
+  
   const restockData = {
     date: getLocalDateTime(),
     sku: p.sku,
@@ -1817,14 +1850,12 @@ function restockProduct(event) {
 
   return false;
 }
-
-/* === Fungsi Notifikasi Khusus Restock === */
-function showRestockAlert(message) {
-  showToast(message);
-}
   
 /* ---------- Cart Functions ---------- */
 function addToCart(sku, qty = 1){
+  // Pastikan products tidak undefined
+  if (!products) products = [];
+  
   const p = products.find(x => x.sku === sku);
   if (!p) return alert("Produk tidak ditemukan");
   if (p.qty <= 0) return alert("Produk telah habis, isi stok dahulu");
@@ -1834,6 +1865,9 @@ function addToCart(sku, qty = 1){
     showToast("Transaksi sebelumnya dibatalkan. Memulai transaksi baru.");
   }
 
+  // Pastikan cart tidak undefined
+  if (!cart) cart = [];
+  
   const cartItem = cart.find(c => c.sku === sku);
   if (cartItem) {
     if (cartItem.qty + qty > p.qty) return alert("Stok tidak cukup");
@@ -1860,6 +1894,10 @@ function renderCart(){
   const count = document.getElementById("cartCount");
   const count2 = document.getElementById("cartCount2");
   const checkoutBtn = document.getElementById("checkoutBtn");
+  
+  // Pastikan cart tidak undefined
+  if (!cart) cart = [];
+  
   if (cart.length === 0) {
     el.innerHTML = '<i class="muted">Keranjang kosong</i>';
     count.textContent = "0"; count2.textContent = "0";
@@ -1925,11 +1963,17 @@ function renderCart(){
   }
 }
 
-function removeFromCart(sku){cart=cart.filter(c=>c.sku!==sku); renderCart()}
+function removeFromCart(sku){
+  // Pastikan cart tidak undefined
+  if (!cart) cart = [];
+  
+  cart=cart.filter(c=>c.sku!==sku); 
+  renderCart();
+}
 function clearCart(){ 
   cart=[]; 
   pendingPaidInvoice = null; 
-  renderCart()
+  renderCart();
 }
 
 /* ---------- printer preference ---------- */
@@ -1947,6 +1991,9 @@ function savePrinterPreference(){
 
 /* ---------- Report Functions ---------- */
 function loadSales(showNotification = true) {
+  // Pastikan sales tidak undefined
+  if (!sales) sales = [];
+  
   const from = document.getElementById("filterFrom").value;
   const to = document.getElementById("filterTo").value;
   const tbl = document.querySelector("#salesTbl tbody");
@@ -2016,7 +2063,11 @@ function loadSales(showNotification = true) {
   }
 }
 
+
 function loadRestock(showNotification = true) {
+  // Pastikan restocks tidak undefined
+  if (!restocks) restocks = [];
+  
   const tbody = document.getElementById("restockTableBody");
   if (!tbody) return;
 
@@ -2081,15 +2132,17 @@ function loadRestock(showNotification = true) {
     showToast("✅ Laporan restok ditampilkan.");
   }
 }
-
 function renderFinalStock(){
   const tbl=document.querySelector("#finalStockTbl tbody")
   tbl.innerHTML=""
+  
+  // Pastikan products tidak undefined
+  if (!products) products = [];
+  
   products.forEach((p,i)=>{
     tbl.innerHTML+=`<tr><td>${i+1}</td><td>${p.sku}</td><td>${p.name}</td><td>${p.qty}</td><td>Rp ${p.price.toLocaleString()}</td></tr>`
   })
 }
-
 /* ---------- Payment Functions with Midtrans ---------- */
 function checkout(){
   // if there is a pending paid invoice, prompt to finalize
@@ -3318,6 +3371,10 @@ function render(){
   const searchVal=document.querySelector("#search").value.toLowerCase().trim()
   tbl.innerHTML=""
   let matched = 0
+  
+  // Pastikan products tidak undefined
+  if (!products) products = [];
+  
   products.forEach((p,i)=>{
     if(p.name.toLowerCase().includes(searchVal)||p.sku.includes(searchVal)){
       matched++
@@ -3342,6 +3399,57 @@ function render(){
   }
   updateRestockDropdown()
   renderProductGrid()
+}
+
+function renderProductGrid() {
+  const grid = document.getElementById("productGrid");
+  const searchValue = document.getElementById("productSearchInput").value.toLowerCase().trim();
+  
+  // Pastikan products tidak undefined
+  if (!products) products = [];
+  
+  // Filter products based on category and search
+  let filteredProducts = products.filter(p => {
+    const matchesCategory = currentCategory === 'all' || (p.category && p.category === currentCategory);
+    const matchesSearch = p.name.toLowerCase().includes(searchValue) || p.sku.toLowerCase().includes(searchValue);
+    return matchesCategory && matchesSearch;
+  });
+  
+  grid.innerHTML = "";
+  
+  if (filteredProducts.length === 0) {
+    grid.innerHTML = '<div class="muted" style="text-align:center;padding:20px">Tidak ada produk yang sesuai</div>';
+    return;
+  }
+  
+  filteredProducts.forEach(p => {
+    const card = document.createElement("div");
+    card.className = "product-card";
+    if (selectedProduct && selectedProduct.sku === p.sku) {
+      card.classList.add("selected");
+    }
+    
+    // Determine stock status
+    const stockClass = p.qty <= 5 ? "low" : "";
+    
+    card.innerHTML = `
+      <div class="product-name">${p.name}</div>
+      <div class="product-price">${formatRupiahNumber(p.price)}</div>
+      <div class="product-stock ${stockClass}">Stok: ${p.qty}</div>
+      <div class="product-actions">
+        <input type="number" class="product-quantity" id="qty-${p.sku}" value="1" min="1" max="${p.qty}">
+        <button class="product-add-btn" onclick="addProductFromGrid('${p.sku}')">Tambah</button>
+      </div>
+    `;
+    
+    card.onclick = function(e) {
+      // Don't select if clicking on input or button
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+      selectProduct(p.sku);
+    };
+    
+    grid.appendChild(card);
+  });
 }
 
 /* ---------- Initialize Application ---------- */
