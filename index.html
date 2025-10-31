@@ -2014,16 +2014,162 @@ function renderFinalStock(){
 }
 
 /* ---------- PERBAIKAN: Payment Functions with Midtrans (Langsung) ---------- */
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Cek apakah Midtrans Snap sudah dimuat
+  if (typeof window.snap === 'undefined') {
+    console.error('Midtrans Snap.js tidak dimuat dengan benar');
+    showToast('❌ Error: Payment gateway tidak tersedia');
+    return;
+  }
+});
+  
 function checkout(){
   if(pendingPaidInvoice){
     openReceiptPreview(pendingPaidInvoice);
     return;
   }
 
-  if(cart.length === 0) return alert("Keranjang kosong")
+  if(cart.length === 0) {
+    showToast('⚠️ Keranjang masih kosong');
+    return;
+  }
   
-  // Langsung proses pembayaran dengan Midtrans
+  // Proses pembayaran dengan Midtrans
   processMidtransPayment();
+}
+
+function processMidtransPayment() {
+  try {
+    showToast('🔄 Memproses pembayaran...');
+    
+    const totals = computeCartTotals();
+    
+    if (totals.finalTotal <= 0) {
+      showToast('⚠️ Total pembayaran tidak valid');
+      return;
+    }
+    
+    const invoice = 'INV-' + Date.now();
+    const now = new Date();
+    const date = now.toISOString();
+    const dateDisplay = now.toLocaleString('id-ID');
+    
+    // Siapkan data transaksi sesuai yang diharapkan backend Anda
+    const transactionData = {
+      transaction_details: {
+        order_id: invoice,
+        gross_amount: totals.finalTotal
+      },
+      item_details: cart.map(item => ({
+        id: item.sku || 'ITEM-' + Date.now(),
+        price: item.price,
+        quantity: item.qty,
+        name: item.name || 'Produk',
+        category: 'General'
+      })),
+      customer_details: {
+        first_name: "Test",
+        last_name: "Customer",
+        email: "test@example.com",
+        phone: "08123456789",
+        billing_address: {
+          address: "Test Address",
+          city: "Jakarta",
+          postal_code: "12345",
+          country: "IDN"
+        }
+      },
+      enabled_payments: [
+        'credit_card', 
+        'gopay', 
+        'shopeepay', 
+        'permata_va', 
+        'bca_va', 
+        'bni_va', 
+        'bri_va',
+        'cimb_va',
+        'other_va',
+        'echannel',
+        'alfamart',
+        'indomaret'
+      ],
+      credit_card: {
+        secure: true,
+        bank: 'bca'
+      },
+      callbacks: {
+        finish: window.location.href
+      }
+    };
+    
+    // Tampilkan loading
+    const checkoutBtn = document.getElementById('checkoutBtn');
+    const originalText = checkoutBtn.textContent;
+    checkoutBtn.disabled = true;
+    checkoutBtn.textContent = '⏳ Memproses...';
+    
+    // Kirim ke backend Node.js Anda (endpoint /get-snap-token)
+    fetch('/get-snap-token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(transactionData)
+    })
+    .then(response => {
+      // Reset button
+      checkoutBtn.disabled = false;
+      checkoutBtn.textContent = originalText;
+      
+      if (!response.ok) {
+        return response.json().then(err => {
+          console.error('Backend Error:', err);
+          throw new Error(err.error || 'Gagal mendapatkan token pembayaran');
+        });
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (!data || !data.token) {
+        throw new Error('Token pembayaran tidak valid dari backend');
+      }
+      
+      console.log('✅ Received token from backend:', data.token);
+      
+      // Buka popup pembayaran Midtrans
+      window.snap.pay(data.token, {
+        onSuccess: function(result) {
+          console.log('Payment Success:', result);
+          handleMidtransSuccess(result, invoice, date, dateDisplay, totals);
+        },
+        onPending: function(result) {
+          console.log('Payment Pending:', result);
+          handleMidtransPending(result, invoice, date, dateDisplay, totals);
+        },
+        onError: function(result) {
+          console.error('Payment Error:', result);
+          handleMidtransError(result);
+        },
+        onClose: function() {
+          showToast('⚠️ Pembayaran dibatalkan');
+          console.log('Payment popup closed');
+        }
+      });
+    })
+    .catch(error => {
+      console.error('Process Payment Error:', error);
+      showToast('❌ ' + error.message);
+      
+      // Reset button
+      checkoutBtn.disabled = false;
+      checkoutBtn.textContent = originalText;
+    });
+    
+  } catch (error) {
+    console.error('Unexpected Error:', error);
+    showToast('❌ Terjadi kesalahan: ' + error.message);
+  }
 }
 
 function processMidtransPayment() {
@@ -2035,62 +2181,216 @@ function processMidtransPayment() {
   const date = now.toISOString()
   const dateDisplay = now.toLocaleString()
   
-  // Simulasi pembayaran berhasil tanpa backend
-  // Di production, Anda harus menggunakan backend untuk mendapatkan Snap token
-  setTimeout(() => {
-    const mockResult = {
-      status_code: '200',
-      transaction_id: 'demo-transaction-id-' + Date.now(),
+  // Siapkan data transaksi
+  const transactionData = {
+    transaction_details: {
       order_id: invoice,
-      gross_amount: totals.finalTotal,
-      payment_type: 'credit_card',
-      transaction_time: dateDisplay,
-      transaction_status: 'capture'
-    };
-    
-    handleMidtransSuccess(mockResult, invoice, date, dateDisplay, totals);
-  }, 2000); // Simulasi delay 2 detik
-}
-
-function handleMidtransSuccess(result, invoice, date, dateDisplay, totals) {
-  const transaction = {
-    invoice,
-    date,
-    dateDisplay,
-    items: JSON.parse(JSON.stringify(cart)),
-    total: totals.finalTotal,
-    discountTotalPercent: discountTotalPercent,
-    totalsBreakdown: {
-      subtotalBefore: totals.subtotalBefore,
-      perProductDiscountTotal: totals.perProductDiscountTotal,
-      percentDiscountAmount: totals.percentDiscountAmount,
-      finalTotal: totals.finalTotal
+      gross_amount: totals.finalTotal
     },
-    method: 'midtrans',
-    paymentDetails: result,
-    status: 'success',
-    finalized: false,
-    completedAt: null
-  }
-
-  transaction.items.forEach(it => {
-    const p = products.find(x=>x.sku===it.sku)
-    if(p){
-      p.qty = Math.max(0, p.qty - it.qty)
+    item_details: cart.map(item => ({
+      id: item.sku,
+      price: item.price,
+      quantity: item.qty,
+      name: item.name
+    })),
+    customer_details: {
+      first_name: "Customer",
+      email: "customer@example.com",
+      phone: "08123456789"
+    }
+  };
+  
+  // Kirim data ke backend untuk mendapatkan Snap token
+  fetch('https://your-backend-api.com/get-snap-token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(transactionData)
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.token) {
+      // Buka popup pembayaran Midtrans dengan token dari backend
+      window.snap.pay(data.token, {
+        onSuccess: function(result) {
+          handleMidtransSuccess(result, invoice, date, dateDisplay, totals);
+        },
+        onPending: function(result) {
+          handleMidtransPending(result, invoice, date, dateDisplay, totals);
+        },
+        onError: function(result) {
+          handleMidtransError(result);
+        },
+        onClose: function() {
+          showToast('Anda menutup popup pembayaran tanpa menyelesaikan transaksi');
+        }
+      });
+    } else {
+      showToast('Gagal mendapatkan token pembayaran: ' + (data.message || 'Terjadi kesalahan'));
     }
   })
+  .catch(error => {
+    console.error('Error:', error);
+    showToast('Gagal memproses pembayaran. Silakan coba lagi.');
+  });
+}
+function handleMidtransSuccess(result, invoice, date, dateDisplay, totals) {
+  try {
+    const transaction = {
+      invoice,
+      date,
+      dateDisplay,
+      items: JSON.parse(JSON.stringify(cart)),
+      total: totals.finalTotal,
+      discountTotalPercent: discountTotalPercent,
+      totalsBreakdown: {
+        subtotalBefore: totals.subtotalBefore,
+        perProductDiscountTotal: totals.perProductDiscountTotal,
+        percentDiscountAmount: totals.percentDiscountAmount,
+        finalTotal: totals.finalTotal
+      },
+      method: 'midtrans',
+      paymentDetails: result,
+      status: 'success',
+      finalized: false,
+      completedAt: null
+    };
 
-  saveProductsToFirebase();
-  sales.push(transaction)
-  saveSalesToFirebase();
+    // Kurangi stok hanya untuk pembayaran berhasil
+    transaction.items.forEach(it => {
+      const p = products.find(x=>x.sku===it.sku);
+      if(p){
+        p.qty = Math.max(0, p.qty - it.qty);
+      }
+    });
 
-  pendingPaidInvoice = invoice
+    saveProductsToFirebase();
+    sales.push(transaction);
+    saveSalesToFirebase();
 
-  renderCart(); renderFinalStock(); loadSales();
+    pendingPaidInvoice = invoice;
 
-  openReceiptPreview(invoice)
+    renderCart(); 
+    renderFinalStock(); 
+    loadSales();
 
-  showToast("Pembayaran berhasil! Cetak struk atau selesaikan penjualan untuk memasukkan laporan.");
+    openReceiptPreview(invoice);
+
+    showToast("✅ Pembayaran berhasil! Silakan cetak struk.");
+    
+  } catch (error) {
+    console.error('Handle Success Error:', error);
+    showToast('❌ Gagal memproses pembayaran berhasil');
+  }
+}
+
+  function handleMidtransPending(result, invoice, date, dateDisplay, totals) {
+  try {
+    const transaction = {
+      invoice,
+      date,
+      dateDisplay,
+      items: JSON.parse(JSON.stringify(cart)),
+      total: totals.finalTotal,
+      discountTotalPercent: discountTotalPercent,
+      totalsBreakdown: {
+        subtotalBefore: totals.subtotalBefore,
+        perProductDiscountTotal: totals.perProductDiscountTotal,
+        percentDiscountAmount: totals.percentDiscountAmount,
+        finalTotal: totals.finalTotal
+      },
+      method: 'midtrans',
+      paymentDetails: result,
+      status: 'pending',
+      finalized: false,
+      completedAt: null
+    };
+
+    // Jangan kurangi stok untuk pembayaran pending
+    saveProductsToFirebase();
+    sales.push(transaction);
+    saveSalesToFirebase();
+
+    pendingPaidInvoice = invoice;
+
+    renderCart(); 
+    renderFinalStock(); 
+    loadSales();
+
+    openReceiptPreview(invoice);
+
+    showToast("⏳ Pembayaran pending. Menunggu konfirmasi.");
+    
+  } catch (error) {
+    console.error('Handle Pending Error:', error);
+    showToast('❌ Gagal memproses pembayaran pending');
+  }
+}
+function handleMidtransError(result) {
+  const errorMessage = result.status_message || "Terjadi kesalahan pada pembayaran";
+  showToast("❌ Pembayaran gagal: " + errorMessage);
+  console.error("Midtrans payment error:", result);
+}
+
+  /* ---------- TAMBAHKAN FUNGSI DEBUG ---------- */
+function testMidtransConnection() {
+  console.log('🔄 Testing connection via your Node.js backend...');
+  
+  const testData = {
+    transaction_details: {
+      order_id: 'TEST-' + Date.now(),
+      gross_amount: 1000
+    },
+    item_details: [{
+      id: 'TEST-ITEM',
+      price: 1000,
+      quantity: 1,
+      name: 'Test Product'
+    }],
+    customer_details: {
+      first_name: "Test",
+      email: "test@example.com",
+      phone: "08123456789"
+    }
+  };
+  
+  fetch('/get-snap-token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(testData)
+  })
+  .then(response => {
+    if (response.ok) {
+      return response.json();
+    } else {
+      throw new Error('Backend responded with status: ' + response.status);
+    }
+  })
+  .then(data => {
+    if (data.token) {
+      console.log('✅ Connection successful! Token received:', data.token);
+      showToast('✅ Koneksi ke backend berhasil!');
+      
+      // Test popup
+      window.snap.pay(data.token, {
+        onSuccess: function() {
+          console.log('Test payment success');
+        },
+        onClose: function() {
+          console.log('Test popup closed');
+        }
+      });
+    } else {
+      throw new Error('No token received from backend');
+    }
+  })
+  .catch(error => {
+    console.error('❌ Connection error:', error);
+    showToast('❌ Error koneksi: ' + error.message);
+  });
 }
 
 /* open receipt preview modal for given invoice */
