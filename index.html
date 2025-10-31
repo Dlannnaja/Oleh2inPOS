@@ -2201,7 +2201,7 @@ function processMidtransPayment() {
   };
   
   // Kirim data ke backend untuk mendapatkan Snap token
-  fetch('https://your-backend-api.com/get-snap-token', {
+  fetch('http://localhost:3000/get-snap-token', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -2331,66 +2331,6 @@ function handleMidtransError(result) {
   const errorMessage = result.status_message || "Terjadi kesalahan pada pembayaran";
   showToast("❌ Pembayaran gagal: " + errorMessage);
   console.error("Midtrans payment error:", result);
-}
-
-  /* ---------- TAMBAHKAN FUNGSI DEBUG ---------- */
-function testMidtransConnection() {
-  console.log('🔄 Testing connection via your Node.js backend...');
-  
-  const testData = {
-    transaction_details: {
-      order_id: 'TEST-' + Date.now(),
-      gross_amount: 1000
-    },
-    item_details: [{
-      id: 'TEST-ITEM',
-      price: 1000,
-      quantity: 1,
-      name: 'Test Product'
-    }],
-    customer_details: {
-      first_name: "Test",
-      email: "test@example.com",
-      phone: "08123456789"
-    }
-  };
-  
-  fetch('/get-snap-token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(testData)
-  })
-  .then(response => {
-    if (response.ok) {
-      return response.json();
-    } else {
-      throw new Error('Backend responded with status: ' + response.status);
-    }
-  })
-  .then(data => {
-    if (data.token) {
-      console.log('✅ Connection successful! Token received:', data.token);
-      showToast('✅ Koneksi ke backend berhasil!');
-      
-      // Test popup
-      window.snap.pay(data.token, {
-        onSuccess: function() {
-          console.log('Test payment success');
-        },
-        onClose: function() {
-          console.log('Test popup closed');
-        }
-      });
-    } else {
-      throw new Error('No token received from backend');
-    }
-  })
-  .catch(error => {
-    console.error('❌ Connection error:', error);
-    showToast('❌ Error koneksi: ' + error.message);
-  });
 }
 
 /* open receipt preview modal for given invoice */
@@ -2704,6 +2644,64 @@ function printSales() {
         <h2>Laporan Penjualan</h2>
         ${table.outerHTML}
       </body>
+      function testMidtransConnection() {
+  console.log('🔄 Testing connection...');
+  
+  const testData = {
+    transaction_details: {
+      order_id: 'TEST-' + Date.now(),
+      gross_amount: 1000
+    },
+    item_details: [{
+      id: 'TEST-ITEM',
+      price: 1000,
+      quantity: 1,
+      name: 'Test Product'
+    }],
+    customer_details: {
+      first_name: "Test",
+      email: "test@example.com",
+      phone: "08123456789"
+    }
+  };
+  
+  fetch('/get-snap-token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(testData)
+  })
+  .then(response => {
+    console.log('Response status:', response.status);
+    return response.json();
+  })
+  .then(data => {
+    console.log('Response data:', data);
+    if (data.token) {
+      console.log('✅ Success! Token:', data.token);
+      showToast('✅ Koneksi berhasil!');
+      
+      // Test popup
+      if (window.snap) {
+        window.snap.pay(data.token, {
+          onSuccess: () => console.log('Test success'),
+          onClose: () => console.log('Test closed')
+        });
+      }
+    } else {
+      console.error('❌ No token in response');
+    }
+  })
+  .catch(error => {
+    console.error('❌ Error:', error);
+    showToast('❌ Error: ' + error.message);
+  });
+}
+
+// Debug info
+console.log('✅ testMidtransConnection LOADED!');
+console.log('Type: testMidtransConnection() to test');
     </html>
   `);
   printWindow.document.close();
@@ -3372,3 +3370,4 @@ document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
+
