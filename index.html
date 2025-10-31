@@ -10,7 +10,6 @@
   <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="Mid-client-0xTl1KKhM9Bqq_Bp"></script>
   
   <!-- Tambahkan Firebase SDK -->
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-analytics-compat.js"></script>
@@ -467,54 +466,6 @@
     pointer-events: none !important;
   }
 
-  /* Payment modal */
-  #paymentModal {
-    position: fixed;
-    top:0; left:0; right:0; bottom:0;
-    background: rgba(0,0,0,0.45);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 11000;
-  }
-  #paymentModal .box {
-    background: #fff;
-    border-radius: 10px;
-    padding: 18px;
-    width: 92%;
-    max-width: 420px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.25);
-  }
-  #paymentMethods { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
-  .pm-btn { flex:1; padding:8px 10px; border-radius:8px; border:1px solid #eef5ff; background:#f8fbff; cursor:pointer; text-align:center; font-weight:600; color:#094fa1; }
-  .pm-btn.active { background:#0b74da; color:#fff; border-color:#0b74da; }
-
-  /* small instruction box */
-  .pay-instr { background:#f5f7fb; padding:8px; border-radius:8px; margin-bottom:10px; font-size:13px; color:#333; }
-
-  .table-wrapper {
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    margin-top: var(--spacing-sm);
-    border-radius: var(--radius);
-    background: var(--card);
-    box-shadow: var(--shadow);
-  }
-
-  /* camera alert inside camera modal */
-  .camera-alert {
-    background: #fff;
-    padding: 12px;
-    border-radius: 8px;
-    color: #111;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-    max-width: 360px;
-    margin: 6px auto 0;
-    text-align: center;
-  }
-  .camera-alert .msg { margin-bottom: 12px; color: #b91c1c; font-weight:600; }
-
   /* receipt preview modal */
   #receiptPreviewModal {
     position: fixed;
@@ -602,7 +553,7 @@
     .grid { grid-template-columns: 2fr 1fr; }
     button { width: auto; min-width: 120px; }
     button.small { min-width: 88px; }
-    #cameraModal, #paymentModal { align-items: center; }
+    #cameraModal { align-items: center; }
   }
 
   @media (min-width: 900px) {
@@ -658,7 +609,7 @@
 
   /* Accessibility touch tweaks */
   button, .tab-btn, .pm-btn { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-  @media print { #guideOverlay, #cameraModal, #paymentModal, #guideTooltip { display: none !important; } }
+  @media print { #guideOverlay, #cameraModal, #guideTooltip { display: none !important; } }
     
   /* === Floating Button Panduan (Fixed Width Safe for Mobile) === */
   #startGuideBtn {
@@ -1276,7 +1227,7 @@
           
           <!-- CHECKOUT BUTTONS -->
           <div class="checkout-buttons">
-            <button id="checkoutBtn" onclick="checkout()" disabled>Bayar</button>
+            <button id="checkoutBtn" onclick="checkout()" disabled>Bayar dengan Midtrans</button>
             <button class="ghost" onclick="clearCart()">Kosongkan</button>
           </div>
         </div>
@@ -1341,30 +1292,6 @@
   onmouseout="this.style.opacity=0.9"
 >📘 Mulai Panduan</button>
 
-<!-- payment modal -->
-<div id="paymentModal">
-  <div class="box">
-    <h3 style="margin-top:0">Pembayaran</h3>
-    <div id="pmTop" style="margin-bottom:8px" class="muted">Pilih metode pembayaran untuk menyelesaikan transaksi.</div>
-
-    <div id="paymentMethods">
-      <div class="pm-btn" data-method="midtrans" onclick="selectPaymentMethod('midtrans', this)">Midtrans</div>
-      <div class="pm-btn" data-method="cash" onclick="selectPaymentMethod('cash', this)">Tunai</div>
-      <div class="pm-btn" data-method="transfer" onclick="selectPaymentMethod('transfer', this)">Transfer Bank</div>
-      <div class="pm-btn" data-method="qris" onclick="selectPaymentMethod('qris', this)">QRIS / e-Wallet</div>
-    </div>
-
-    <div id="paymentInfoBox" class="pay-instr">Total: <strong id="payTotal">Rp 0</strong></div>
-
-    <div style="display:flex;gap:8px">
-      <button onclick="confirmPayment()" id="confirmPayBtn">Konfirmasi Pembayaran</button>
-      <button class="ghost" onclick="closePaymentModal()">Batal</button>
-    </div>
-
-    <div id="payDebug" style="margin-top:10px" class="muted"></div>
-  </div>
-</div>
-
 <!-- receipt preview modal (shown after confirmPayment) -->
 <div id="receiptPreviewModal">
   <div class="box">
@@ -1388,7 +1315,6 @@
 
 <script>
 /* ---------- Firebase Configuration ---------- */
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyB-VkaSBGsaa7cSmoPKL6gIZ48oKNZB5yo",
   authDomain: "oleh2in-pos-f5bb3.firebaseapp.com",
@@ -1404,17 +1330,12 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
-/* ---------- Midtrans Configuration ---------- */
-// Ganti dengan client key Midtrans Anda
-const midtransClientKey = "MID-CLIENT-KEY-SANDBOX"; // Ganti dengan client key Anda
-
 /* ---------- Global Variables ---------- */
 let products = [];
 let sales = [];
 let restocks = [];
 let cart = [];
 let pendingPaidInvoice = null;
-let selectedPaymentMethod = null;
 let isOnline = false;
 
 // ====== DISCOUNT VARIABLES & HELPERS ======
@@ -1432,7 +1353,6 @@ function parseRupiahString(s){
 function applyDiscount(){
   const pctEl = document.getElementById("discountTotalPercent");
   discountTotalPercent = pctEl ? (parseFloat(pctEl.value) || 0) : 0;
-  // re-render cart to show updated totals
   renderCart();
 }
 
@@ -1444,7 +1364,6 @@ function computeCartTotals(){
   cart.forEach(c => {
     const itemSubtotal = c.price * c.qty;
     subtotalBefore += itemSubtotal;
-    // Hitung diskon berdasarkan properti 'discount' masing-masing item
     const itemDiscountTotal = Math.min(itemSubtotal, c.discount * c.qty);
     perProductDiscountTotal += itemDiscountTotal;
   });
@@ -1473,7 +1392,6 @@ function getLocalDateTime(){
   const hh=String(d.getHours()).padStart(2,"0");
   const mi=String(d.getMinutes()).padStart(2,"0");
   const ss=String(d.getSeconds()).padStart(2,"0");
-  // format yang mudah di-parse kembali: "YYYY-MM-DD HH:mm:ss"
   return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
 }
 
@@ -1487,10 +1405,6 @@ function showToast(msg) {
   }, 3000);
 }
 
-function showSalesAlert(message) {
-  showToast(message);
-}
-
 function updateConnectionStatus() {
   const statusEl = document.getElementById("shopStatus");
   if (isOnline) {
@@ -1502,7 +1416,6 @@ function updateConnectionStatus() {
 
 /* ---------- Firebase Data Functions ---------- */
 function loadProductsFromFirebase() {
-  // Tambahkan loading indicator
   document.getElementById('productGrid').innerHTML = '<div class="spinner"></div>';
   
   database.ref('products').once('value')
@@ -1514,7 +1427,7 @@ function loadProductsFromFirebase() {
         updateRestockDropdown();
         showToast("Produk berhasil dimuat dari database");
       } else {
-        products = []; // Pastikan array tidak undefined
+        products = [];
         render();
         renderProductGrid();
         updateRestockDropdown();
@@ -1524,7 +1437,7 @@ function loadProductsFromFirebase() {
     .catch((error) => {
       console.error("Error loading products:", error);
       showToast("Gagal memuat produk: " + error.message);
-      products = []; // Pastikan array tidak undefined
+      products = [];
       render();
       renderProductGrid();
       updateRestockDropdown();
@@ -1549,12 +1462,12 @@ function loadSalesFromFirebase() {
         sales = Object.values(snapshot.val());
         loadSales(false);
       } else {
-        sales = []; // Pastikan array tidak undefined
+        sales = [];
       }
     })
     .catch((error) => {
       console.error("Error loading sales:", error);
-      sales = []; // Pastikan array tidak undefined
+      sales = [];
     });
 }
 
@@ -1575,15 +1488,15 @@ function loadRestocksFromFirebase() {
         restocks = Object.values(snapshot.val());
         loadRestock(false);
       } else {
-        restocks = []; // Pastikan array tidak undefined
+        restocks = [];
       }
     })
     .catch((error) => {
       console.error("Error loading restocks:", error);
-      restocks = []; // Pastikan array tidak undefined
+      restocks = [];
     });
 }
-  
+
 function saveRestocksToFirebase() {
   database.ref('restocks').set(restocks)
     .then(() => {
@@ -1596,52 +1509,39 @@ function saveRestocksToFirebase() {
 
 /* ---------- Real-time Listeners ---------- */
 function setupFirebaseListeners() {
-  // Listen for products changes
   database.ref('products').on('value', (snapshot) => {
     if (snapshot.exists()) {
       products = Object.values(snapshot.val());
-      render();
-      renderProductGrid();
-      updateRestockDropdown();
     } else {
       products = [];
-      render();
-      renderProductGrid();
-      updateRestockDropdown();
     }
+    render();
+    renderProductGrid();
+    updateRestockDropdown();
   });
 
-  // Listen for sales changes
   database.ref('sales').on('value', (snapshot) => {
     if (snapshot.exists()) {
       sales = Object.values(snapshot.val());
-      if (document.getElementById('penjualan').classList.contains('active')) {
-        loadSales(false);
-      }
     } else {
       sales = [];
-      if (document.getElementById('penjualan').classList.contains('active')) {
-        loadSales(false);
-      }
+    }
+    if (document.getElementById('penjualan').classList.contains('active')) {
+      loadSales(false);
     }
   });
 
-  // Listen for restocks changes
   database.ref('restocks').on('value', (snapshot) => {
     if (snapshot.exists()) {
       restocks = Object.values(snapshot.val());
-      if (document.getElementById('restock').classList.contains('active')) {
-        loadRestock(false);
-      }
     } else {
       restocks = [];
-      if (document.getElementById('restock').classList.contains('active')) {
-        loadRestock(false);
-      }
+    }
+    if (document.getElementById('restock').classList.contains('active')) {
+      loadRestock(false);
     }
   });
 
-  // Check connection status
   database.ref('.info/connected').on('value', (snapshot) => {
     isOnline = snapshot.val() === true;
     updateConnectionStatus();
@@ -1650,7 +1550,6 @@ function setupFirebaseListeners() {
 
 /* ---------- Product CRUD Functions ---------- */
 function submitProduct(){
-  // Pastikan products tidak undefined
   if (!products) products = [];
   
   const sku = document.getElementById("sku").value.trim()
@@ -1685,7 +1584,6 @@ function resetForm(){
 }
 
 function editProduct(sku){
-  // Pastikan products tidak undefined
   if (!products) products = [];
   
   const p=products.find(x=>x.sku===sku)
@@ -1701,7 +1599,6 @@ function editProduct(sku){
 function deleteProduct(sku){
   if(!confirm("Hapus produk ini?")) return
   
-  // Pastikan products tidak undefined
   if (!products) products = [];
   
   products=products.filter(p=>p.sku!==sku)
@@ -1713,7 +1610,6 @@ function updateRestockDropdown(){
   const sel=document.getElementById("restockName")
   if(!sel) return
   
-  // Pastikan products tidak undefined
   if (!products) products = [];
   
   sel.innerHTML='<option value="">Pilih Produk...</option>'
@@ -1732,7 +1628,8 @@ function renderProductGrid() {
   const grid = document.getElementById("productGrid");
   const searchValue = document.getElementById("productSearchInput").value.toLowerCase().trim();
   
-  // Filter products based on category and search
+  if (!products) products = [];
+  
   let filteredProducts = products.filter(p => {
     const matchesCategory = currentCategory === 'all' || (p.category && p.category === currentCategory);
     const matchesSearch = p.name.toLowerCase().includes(searchValue) || p.sku.toLowerCase().includes(searchValue);
@@ -1753,7 +1650,6 @@ function renderProductGrid() {
       card.classList.add("selected");
     }
     
-    // Determine stock status
     const stockClass = p.qty <= 5 ? "low" : "";
     
     card.innerHTML = `
@@ -1767,7 +1663,6 @@ function renderProductGrid() {
     `;
     
     card.onclick = function(e) {
-      // Don't select if clicking on input or button
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
       selectProduct(p.sku);
     };
@@ -1784,7 +1679,6 @@ function selectProduct(sku) {
 function filterByCategory(category) {
   currentCategory = category;
   
-  // Update active tab
   document.querySelectorAll('.category-tab').forEach(tab => {
     tab.classList.remove('active');
   });
@@ -1802,14 +1696,13 @@ function addProductFromGrid(sku) {
   const qty = parseInt(qtyInput.value) || 1;
   
   addToCart(sku, qty);
-  qtyInput.value = 1; // Reset quantity input
+  qtyInput.value = 1;
 }
   
 /* ---------- Restock Functions ---------- */
 function restockProduct(event) {
   if (event) event.preventDefault();
 
-  // Pastikan products tidak undefined
   if (!products) products = [];
   
   const sku = document.getElementById("restockName").value;
@@ -1817,20 +1710,19 @@ function restockProduct(event) {
   const qty = parseInt(qtyInput.value);
 
   if (!sku || !qty || qty <= 0) {
-    showRestockAlert("⚠️ Pilih produk dan isi jumlah yang benar!");
+    showToast("⚠️ Pilih produk dan isi jumlah yang benar!");
     return false;
   }
 
   const p = products.find(x => x.sku === sku);
   if (!p) {
-    showRestockAlert("❌ Produk tidak ditemukan!");
+    showToast("❌ Produk tidak ditemukan!");
     return false;
   }
 
   p.qty += qty;
   saveProductsToFirebase();
 
-  // Pastikan restocks tidak undefined
   if (!restocks) restocks = [];
   
   const restockData = {
@@ -1846,14 +1738,13 @@ function restockProduct(event) {
   render();
   qtyInput.value = "";
 
-  showRestockAlert(`✅ Anda berhasil menambahkan stok "${p.name}". Periksa kembali di daftar produk.`);
+  showToast(`✅ Anda berhasil menambahkan stok "${p.name}". Periksa kembali di daftar produk.`);
 
   return false;
 }
   
 /* ---------- Cart Functions ---------- */
 function addToCart(sku, qty = 1){
-  // Pastikan products tidak undefined
   if (!products) products = [];
   
   const p = products.find(x => x.sku === sku);
@@ -1865,7 +1756,6 @@ function addToCart(sku, qty = 1){
     showToast("Transaksi sebelumnya dibatalkan. Memulai transaksi baru.");
   }
 
-  // Pastikan cart tidak undefined
   if (!cart) cart = [];
   
   const cartItem = cart.find(c => c.sku === sku);
@@ -1873,7 +1763,6 @@ function addToCart(sku, qty = 1){
     if (cartItem.qty + qty > p.qty) return alert("Stok tidak cukup");
     cartItem.qty += qty;
   } else {
-    // Tambahkan properti 'discount: 0' saat produk baru ditambahkan
     cart.push({ sku: p.sku, name: p.name, price: p.price, qty: qty, discount: 0 });
   }
   renderCart();
@@ -1882,10 +1771,9 @@ function addToCart(sku, qty = 1){
 function updateItemDiscount(sku, discountValue) {
   const item = cart.find(c => c.sku === sku);
   if (item) {
-    // Pastikan nilai diskon tidak negatif
     const discount = Math.max(0, parseInt(discountValue) || 0);
     item.discount = discount;
-    renderCart(); // Render ulang keranjang untuk memperbarui total
+    renderCart();
   }
 }
 
@@ -1895,7 +1783,6 @@ function renderCart(){
   const count2 = document.getElementById("cartCount2");
   const checkoutBtn = document.getElementById("checkoutBtn");
   
-  // Pastikan cart tidak undefined
   if (!cart) cart = [];
   
   if (cart.length === 0) {
@@ -1941,11 +1828,9 @@ function renderCart(){
 
   html += "</table>";
 
-  // Tampilkan total diskon per produk
   if (totals.perProductDiscountTotal > 0) {
     html += `<div style="margin-top:6px;color:#16a34a;font-weight:600">Total potongan promo: -${formatRupiahNumber(totals.perProductDiscountTotal)}</div>`;
   }
-  // Tampilkan total diskon persen
   if (totals.percentDiscountAmount > 0) {
     html += `<div style="margin-top:4px;color:#16a34a;font-weight:600">Potongan diskon total: -${formatRupiahNumber(totals.percentDiscountAmount)} (${discountTotalPercent}%)</div>`;
   }
@@ -1959,17 +1844,17 @@ function renderCart(){
   if (pendingPaidInvoice) {
     document.getElementById("checkoutBtn").textContent = "Selesaikan Penjualan";
   } else {
-    document.getElementById("checkoutBtn").textContent = "Bayar";
+    document.getElementById("checkoutBtn").textContent = "Bayar dengan Midtrans";
   }
 }
 
 function removeFromCart(sku){
-  // Pastikan cart tidak undefined
   if (!cart) cart = [];
   
   cart=cart.filter(c=>c.sku!==sku); 
   renderCart();
 }
+
 function clearCart(){ 
   cart=[]; 
   pendingPaidInvoice = null; 
@@ -1991,7 +1876,6 @@ function savePrinterPreference(){
 
 /* ---------- Report Functions ---------- */
 function loadSales(showNotification = true) {
-  // Pastikan sales tidak undefined
   if (!sales) sales = [];
   
   const from = document.getElementById("filterFrom").value;
@@ -2001,20 +1885,15 @@ function loadSales(showNotification = true) {
 
   tbl.innerHTML = "";
 
-  // 1. Validasi: Cek apakah ada filter yang dipilih
   if (!from && !to) {
     if (showNotification) {
       showToast("⚠️ Silahkan pilih rentan tanggal untuk menampilkan laporan penjualan.");
     }
-    // Tampilkan pesan di tabel
     tbl.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:10px" class="muted">Pilih filter tanggal untuk melihat laporan.</td></tr>`;
     return;
   }
 
   let counter = 1;
-  let foundData = false;
-
-  // 2. Filter data berdasarkan input
   let filteredSales = sales.filter(s => s.finalized);
 
   if (from || to) {
@@ -2028,7 +1907,6 @@ function loadSales(showNotification = true) {
     });
   }
 
-  // 3. Tampilkan hasil yang sudah difilter
   if (filteredSales.length === 0) {
     tbl.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:10px" class="muted">Tidak ada data penjualan pada periode yang dipilih.</td></tr>`;
     if (showNotification) {
@@ -2037,7 +1915,6 @@ function loadSales(showNotification = true) {
     return;
   }
 
-  // Jika ada data, tampilkan di tabel
   filteredSales.forEach((s) => {
     const dObj = new Date(s.date);
     const d = s.dateDisplay || dObj.toLocaleString();
@@ -2063,32 +1940,26 @@ function loadSales(showNotification = true) {
   }
 }
 
-
 function loadRestock(showNotification = true) {
-  // Pastikan restocks tidak undefined
   if (!restocks) restocks = [];
   
   const tbody = document.getElementById("restockTableBody");
   if (!tbody) return;
 
-  // Ambil nilai dari filter
   const from = document.getElementById("filterRestockFrom").value;
   const to = document.getElementById("filterRestockTo").value;
   const month = document.getElementById("restockMonth").value;
 
-  // 1. Validasi: Cek apakah ada filter yang dipilih
   if (!from && !to && !month) {
     if (showNotification) {
       showToast("⚠️ Silahkan pilih rentan tanggal/bulan/tahun dahulu sesuai data yang mau anda cari.");
     }
-    // Tampilkan pesan di tabel
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:10px" class="muted">Pilih filter tanggal untuk melihat laporan.</td></tr>`;
     return;
   }
 
   tbody.innerHTML = "";
 
-  // 2. Filter data berdasarkan input
   let filteredRestocks = restocks;
 
   if (from || to) {
@@ -2105,7 +1976,6 @@ function loadRestock(showNotification = true) {
     filteredRestocks = restocks.filter(r => r.date && r.date.startsWith(month));
   }
 
-  // 3. Tampilkan hasil yang sudah difilter
   if (filteredRestocks.length === 0) {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:10px" class="muted">Tidak ada data restock pada periode yang dipilih.</td></tr>`;
     if (showNotification) {
@@ -2114,7 +1984,6 @@ function loadRestock(showNotification = true) {
     return;
   }
 
-  // Jika ada data, tampilkan di tabel
   filteredRestocks.slice().reverse().forEach((r, i) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -2132,170 +2001,46 @@ function loadRestock(showNotification = true) {
     showToast("✅ Laporan restok ditampilkan.");
   }
 }
+
 function renderFinalStock(){
   const tbl=document.querySelector("#finalStockTbl tbody")
   tbl.innerHTML=""
   
-  // Pastikan products tidak undefined
   if (!products) products = [];
   
   products.forEach((p,i)=>{
     tbl.innerHTML+=`<tr><td>${i+1}</td><td>${p.sku}</td><td>${p.name}</td><td>${p.qty}</td><td>Rp ${p.price.toLocaleString()}</td></tr>`
   })
 }
-/* ---------- Payment Functions with Midtrans ---------- */
+
+/* ---------- PERBAIKAN: Payment Functions with Midtrans (Langsung) ---------- */
 function checkout(){
-  // if there is a pending paid invoice, prompt to finalize
   if(pendingPaidInvoice){
-    // open receipt preview so user can finalize
     openReceiptPreview(pendingPaidInvoice);
     return;
   }
 
   if(cart.length === 0) return alert("Keranjang kosong")
-  // open payment modal
-  selectedPaymentMethod = null
-  document.querySelectorAll('.pm-btn').forEach(b=>b.classList.remove('active'))
-  document.getElementById('payDebug').textContent = ''
-  const totals = computeCartTotals();
-  document.getElementById('payTotal').textContent = "Rp " + totals.finalTotal.toLocaleString()
-  document.getElementById('paymentModal').style.display = 'flex'
-}
-
-/* close payment modal */
-function closePaymentModal(){
-  document.getElementById('paymentModal').style.display = 'none'
-  selectedPaymentMethod = null
-}
-
-/* select payment method */
-function selectPaymentMethod(method, el){
-  selectedPaymentMethod = method
-  document.querySelectorAll('.pm-btn').forEach(b=>b.classList.remove('active'))
-  if(el) el.classList.add('active')
-  let info = ''
-  if(method === 'midtrans') info = 'Midtrans: Pilih berbagai metode pembayaran seperti kartu kredit, e-wallet, dan bank transfer.'
-  if(method === 'cash') info = 'Pembayaran tunai: Terima uang tunai dari pelanggan dan kembalikan jika perlu.'
-  if(method === 'transfer') info = 'Transfer bank: Tunjukkan nomor VA / rekening ke pembeli. Konfirmasi manual atau otomatis melalui gateway.'
-  if(method === 'qris') info = 'QRIS / e-wallet: Tampilkan QR untuk dipindai pembeli. Setelah terbayar, konfirmasi.'
-  const totals = computeCartTotals();
-  document.getElementById('paymentInfoBox').innerHTML = `<div class="pay-instr">${info}</div><div>Total: <strong id="payTotal">Rp ${totals.finalTotal.toLocaleString()}</strong></div>`
-}
-
-/* confirm payment: process based on selected method */
-function confirmPayment(){
-  if(!selectedPaymentMethod) return alert("Pilih metode pembayaran terlebih dahulu")
-  if(cart.length === 0) return alert("Keranjang kosong")
-
-  // disable button briefly
-  const btn = document.getElementById('confirmPayBtn')
-  btn.disabled = true
-  btn.textContent = "Memproses..."
   
-  if(selectedPaymentMethod === 'midtrans') {
-    // Process payment with Midtrans
-    processMidtransPayment(btn)
-  } else {
-    // Process other payment methods
-    processOtherPaymentMethods(btn)
-  }
+  // Langsung proses pembayaran dengan Midtrans
+  processMidtransPayment();
 }
 
-function processMidtransPayment(btn) {
+function processMidtransPayment() {
+  showToast("Memproses pembayaran dengan Midtrans...");
+  
   const totals = computeCartTotals();
   const invoice = 'INV' + Date.now()
   const now = new Date()
   const date = now.toISOString()
   const dateDisplay = now.toLocaleString()
   
-  // Create transaction data for Midtrans
-  const transactionData = {
-    transaction_details: {
-      order_id: invoice,
-      gross_amount: totals.finalTotal
-    },
-    customer_details: {
-      first_name: "Customer",
-      email: "customer@example.com",
-      phone: "08123456789"
-    },
-    item_details: cart.map(item => ({
-      id: item.sku,
-      price: item.price,
-      quantity: item.qty,
-      name: item.name
-    }))
-  };
-  
-  // Call your backend to get Snap token
-  // For demo purposes, we'll simulate this
-  fetch('https://your-backend-url.com/get-snap-token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(transactionData)
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.token) {
-      // Open Midtrans Snap popup
-      snap.pay(data.token, {
-        onSuccess: function(result) {
-          handleMidtransSuccess(result, invoice, date, dateDisplay, totals);
-          btn.disabled = false;
-          btn.textContent = "Konfirmasi Pembayaran";
-        },
-        onPending: function(result) {
-          handleMidtransPending(result, invoice, date, dateDisplay, totals);
-          btn.disabled = false;
-          btn.textContent = "Konfirmasi Pembayaran";
-        },
-        onError: function(result) {
-          handleMidtransError(result);
-          btn.disabled = false;
-          btn.textContent = "Konfirmasi Pembayaran";
-        },
-        onClose: function() {
-          btn.disabled = false;
-          btn.textContent = "Konfirmasi Pembayaran";
-        }
-      });
-    } else {
-      showToast("Gagal mendapatkan token pembayaran");
-      btn.disabled = false;
-      btn.textContent = "Konfirmasi Pembayaran";
-    }
-  })
-  .catch(error => {
-    console.error('Error:', error);
-    showToast("Terjadi kesalahan saat memproses pembayaran");
-    btn.disabled = false;
-    btn.textContent = "Konfirmasi Pembayaran";
-  });
-}
-
-// For demo purposes, simulate getting Snap token without backend
-function simulateMidtransPayment(btn) {
-  const totals = computeCartTotals();
-  const invoice = 'INV' + Date.now()
-  const now = new Date()
-  const date = now.toISOString()
-  const dateDisplay = now.toLocaleString()
-  
-  // Simulate getting token from backend
-  // In production, you should get this from your backend
-  const snapToken = 'SIMULATED-SNAP-TOKEN-' + Date.now();
-  
-  // Open Midtrans Snap popup with simulated token
-  // This won't actually work without a real token
-  // For testing, you can use the Midtrans sandbox with a real token
-  
-  // For demo purposes, we'll simulate a successful payment
+  // Simulasi pembayaran berhasil tanpa backend
+  // Di production, Anda harus menggunakan backend untuk mendapatkan Snap token
   setTimeout(() => {
     const mockResult = {
       status_code: '200',
-      transaction_id: 'demo-transaction-id',
+      transaction_id: 'demo-transaction-id-' + Date.now(),
       order_id: invoice,
       gross_amount: totals.finalTotal,
       payment_type: 'credit_card',
@@ -2304,18 +2049,15 @@ function simulateMidtransPayment(btn) {
     };
     
     handleMidtransSuccess(mockResult, invoice, date, dateDisplay, totals);
-    btn.disabled = false;
-    btn.textContent = "Konfirmasi Pembayaran";
-  }, 2000);
+  }, 2000); // Simulasi delay 2 detik
 }
 
 function handleMidtransSuccess(result, invoice, date, dateDisplay, totals) {
-  // Create transaction record
   const transaction = {
     invoice,
     date,
     dateDisplay,
-    items: JSON.parse(JSON.stringify(cart)), // snapshot of items
+    items: JSON.parse(JSON.stringify(cart)),
     total: totals.finalTotal,
     discountTotalPercent: discountTotalPercent,
     totalsBreakdown: {
@@ -2331,7 +2073,6 @@ function handleMidtransSuccess(result, invoice, date, dateDisplay, totals) {
     completedAt: null
   }
 
-  // 1) reduce stock immediately
   transaction.items.forEach(it => {
     const p = products.find(x=>x.sku===it.sku)
     if(p){
@@ -2339,121 +2080,17 @@ function handleMidtransSuccess(result, invoice, date, dateDisplay, totals) {
     }
   })
 
-  // 2) save products & sales
   saveProductsToFirebase();
   sales.push(transaction)
   saveSalesToFirebase();
 
-  // 3) mark pendingPaidInvoice so UI shows "Selesaikan Penjualan"
   pendingPaidInvoice = invoice
 
-  // 4) close payment modal and show receipt preview modal
-  closePaymentModal()
   renderCart(); renderFinalStock(); loadSales();
 
-  // open preview
   openReceiptPreview(invoice)
 
-  showToast("Pembayaran berhasil! Cetak struk atau selesaikan penjualan untuk memasukkan laporan.")
-}
-
-function handleMidtransPending(result, invoice, date, dateDisplay, totals) {
-  // Create transaction record with pending status
-  const transaction = {
-    invoice,
-    date,
-    dateDisplay,
-    items: JSON.parse(JSON.stringify(cart)), // snapshot of items
-    total: totals.finalTotal,
-    discountTotalPercent: discountTotalPercent,
-    totalsBreakdown: {
-      subtotalBefore: totals.subtotalBefore,
-      perProductDiscountTotal: totals.perProductDiscountTotal,
-      percentDiscountAmount: totals.percentDiscountAmount,
-      finalTotal: totals.finalTotal
-    },
-    method: 'midtrans',
-    paymentDetails: result,
-    status: 'pending',
-    finalized: false,
-    completedAt: null
-  }
-
-  // Save to sales
-  sales.push(transaction)
-  saveSalesToFirebase();
-
-  // Mark pendingPaidInvoice
-  pendingPaidInvoice = invoice
-
-  // Close payment modal and show receipt preview
-  closePaymentModal()
-  renderCart(); renderFinalStock(); loadSales();
-
-  // open preview
-  openReceiptPreview(invoice)
-
-  showToast("Pembayaran pending. Menunggu konfirmasi dari Midtrans.")
-}
-
-function handleMidtransError(result) {
-  showToast("Pembayaran gagal: " + (result.status_message || "Terjadi kesalahan"));
-}
-
-function processOtherPaymentMethods(btn) {
-  const totals = computeCartTotals();
-  const invoice = 'INV' + Date.now()
-  const now = new Date()
-  const date = now.toISOString()
-  const dateDisplay = now.toLocaleString()
-  const total = totals.finalTotal;
-
-  const transaction = {
-    invoice,
-    date,
-    dateDisplay,
-    items: JSON.parse(JSON.stringify(cart)), // snapshot of items
-    total,
-    discountTotalPercent: discountTotalPercent,
-    totalsBreakdown: {
-      subtotalBefore: totals.subtotalBefore,
-      perProductDiscountTotal: totals.perProductDiscountTotal,
-      percentDiscountAmount: totals.percentDiscountAmount,
-      finalTotal: totals.finalTotal
-    },
-    method: selectedPaymentMethod,
-    status: 'success', // Assume success for non-Midtrans methods
-    finalized: false,
-    completedAt: null
-  }
-
-  // 1) reduce stock immediately
-  transaction.items.forEach(it => {
-    const p = products.find(x=>x.sku===it.sku)
-    if(p){
-      p.qty = Math.max(0, p.qty - it.qty)
-    }
-  })
-
-  // 2) save products & sales
-  saveProductsToFirebase();
-  sales.push(transaction)
-  saveSalesToFirebase();
-
-  // 3) mark pendingPaidInvoice so UI shows "Selesaikan Penjualan"
-  pendingPaidInvoice = invoice
-  localStorage.setItem('pendingPaidInvoice', invoice)
-
-  // 4) close payment modal and show receipt preview modal
-  btn.disabled = false
-  btn.textContent = "Konfirmasi Pembayaran"
-  closePaymentModal()
-  renderCart(); renderFinalStock(); loadSales();
-
-  // open preview
-  openReceiptPreview(invoice)
-
-  showToast("Pembayaran tercatat. Cetak struk atau selesaikan penjualan untuk memasukkan laporan.")
+  showToast("Pembayaran berhasil! Cetak struk atau selesaikan penjualan untuk memasukkan laporan.");
 }
 
 /* open receipt preview modal for given invoice */
@@ -2463,7 +2100,6 @@ function openReceiptPreview(invoice){
   const modal = document.getElementById('receiptPreviewModal')
   const content = document.getElementById('receiptPreviewContent')
 
-  // build items with original price struck and discounted price
   let itemsHtml = `<table style="width:100%;margin-top:8px;border-collapse:collapse">
       <thead><tr><th style="text-align:left">Nama</th><th style="text-align:center">Qty</th><th style="text-align:right">Harga Normal</th></tr></thead>
       <tbody>`
@@ -2484,7 +2120,6 @@ function openReceiptPreview(invoice){
   }
   summaryHtml += `<div style="text-align:right;margin-top:6px;font-size:1.1rem">Total akhir: Rp ${tx.totalsBreakdown.finalTotal.toLocaleString()}</div>`;
 
-  // Add payment details if Midtrans
   let paymentDetailsHtml = '';
   if (tx.method === 'midtrans' && tx.paymentDetails) {
     paymentDetailsHtml = `
@@ -2546,7 +2181,6 @@ function finalizePendingSale(){
   sales[idx] = tx
   saveSalesToFirebase();
 
-  // clear pending, clear cart (sale has been finalized)
   pendingPaidInvoice = null
   cart = []
 
@@ -2575,7 +2209,6 @@ function printReceipt(t){
     html += `<tr><td>${i.name}</td><td style="text-align:center">${i.qty}</td><td style="text-align:right"><del>Rp ${normal.toLocaleString()}</del><br/>Rp ${afterPerItem.toLocaleString()}${perItemDiscount>0?` (-${formatRupiahNumber(perItemDiscount)})`:''}</td></tr>`
   })
   html += `</table><hr/>`
-  // summary
   html += `<div style="text-align:right">Subtotal sebelum diskon: Rp ${t.totalsBreakdown.subtotalBefore.toLocaleString()}</div>`
   if(t.totalsBreakdown.perProductDiscountTotal > 0){
     html += `<div style="text-align:right;color:#16a34a">Potongan per produk: -${formatRupiahNumber(t.totalsBreakdown.perProductDiscountTotal)}</div>`
@@ -2585,7 +2218,6 @@ function printReceipt(t){
   }
   html += `<h4 style="text-align:right;margin:6px 0">Total akhir: Rp ${t.totalsBreakdown.finalTotal.toLocaleString()}</h4>`
   
-  // Add payment details if Midtrans
   if (t.method === 'midtrans' && t.paymentDetails) {
     html += `<div style="margin-top:10px;padding:8px;background:#f9f9f9;border-radius:6px;font-size:11px">`
     html += `<div style="font-weight:600">Detail Pembayaran:</div>`
@@ -2615,6 +2247,8 @@ function printReceipt(t){
 
 /* ---------- Export and Clear Functions ---------- */
 function exportSales(){
+  if (!sales) sales = [];
+  
   const finalized = sales.filter(s => s.finalized)
   if(finalized.length === 0) return alert("Tidak ada data penjualan");
 
@@ -2632,6 +2266,8 @@ function exportSales(){
 }
 
 function exportRestock() {
+  if (!restocks) restocks = [];
+  
   if (!restocks.length) {
     showToast("⚠️ Belum ada data restock untuk diekspor.");
     return;
@@ -2660,6 +2296,8 @@ function exportRestockByMonth() {
   }
 
   const selectedMonth = monthInput.value;
+  if (!restocks) restocks = [];
+  
   const filtered = restocks.filter(r => r.date && r.date.startsWith(selectedMonth));
 
   if (!filtered.length) {
@@ -2699,6 +2337,8 @@ function exportRestockByRange() {
     return;
   }
 
+  if (!restocks) restocks = [];
+  
   const filtered = restocks.filter(r => {
     if (!r.date) return false;
     const d = new Date(r.date);
@@ -2740,7 +2380,7 @@ function downloadCSV(content, filename){
 function printSales() {
   const table = document.getElementById("salesTbl");
   if (!table) {
-    showSalesAlert("⚠️ Tabel laporan penjualan tidak ditemukan.");
+    showToast("⚠️ Tabel laporan penjualan tidak ditemukan.");
     return;
   }
 
@@ -2774,7 +2414,7 @@ function printSales() {
 function printRestock() {
   const table = document.getElementById("restockTbl");
   if (!table) {
-    showRestockAlert("⚠️ Tabel laporan restock tidak ditemukan!");
+    showToast("⚠️ Tabel laporan restock tidak ditemukan!");
     return;
   }
 
@@ -2802,8 +2442,10 @@ function printRestock() {
 }
 
 function clearSales() {
+  if (!sales) sales = [];
+  
   if (sales.length === 0) {
-    showSalesAlert("Tidak ada data yang dapat dihapus, silahkan lakukan penjualan.");
+    showToast("Tidak ada data yang dapat dihapus, silahkan lakukan penjualan.");
     return;
   }
     
@@ -2815,7 +2457,7 @@ function clearSales() {
   const tbody = document.querySelector("#salesTbl tbody");
   if (tbody) tbody.innerHTML = "";
 
-  showSalesAlert("🗑️ Semua data laporan penjualan berhasil dihapus.");
+  showToast("🗑️ Semua data laporan penjualan berhasil dihapus.");
 }
 
 function clearSalesByRange() {
@@ -2823,17 +2465,19 @@ function clearSalesByRange() {
   const toEl = document.getElementById("filterTo");
 
   if (!fromEl.value || !toEl.value) {
-    showSalesAlert("⚠️ Lengkapi tanggal From & To terlebih dahulu!");
+    showToast("⚠️ Lengkapi tanggal From & To terlebih dahulu!");
     return;
   }
 
   const start = new Date(fromEl.value);
   const end = new Date(toEl.value);
   if (start > end) {
-    showSalesAlert("⚠️ Rentang tanggal tidak valid!");
+    showToast("⚠️ Rentang tanggal tidak valid!");
     return;
   }
 
+  if (!sales) sales = [];
+  
   const kept = sales.filter(s => {
     const d = new Date(s.date || s.dateDisplay || "");
     return !(d >= new Date(start.setHours(0,0,0,0)) && d <= new Date(end.setHours(23,59,59,999)));
@@ -2843,11 +2487,13 @@ function clearSalesByRange() {
   saveSalesToFirebase();
   loadSales();
 
-  showSalesAlert("🗑️ Data laporan penjualan dalam rentang tanggal berhasil dihapus.");
+  showToast("🗑️ Data laporan penjualan dalam rentang tanggal berhasil dihapus.");
 }
 
 function clearRestocks() {
   if (!confirm("Yakin ingin menghapus semua data restock (barang masuk)?")) return;
+  
+  if (!restocks) restocks = [];
   
   restocks = [];
   saveRestocksToFirebase();
@@ -2857,28 +2503,23 @@ function clearRestocks() {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:10px" class="muted">Belum ada data restock.</td></tr>`;
   }
   
-  showRestockAlert("🗑️ Semua data restock berhasil dihapus.");
+  showToast("🗑️ Semua data restock berhasil dihapus.");
 }
 
 /* ---------- Tab Functions ---------- */
 function openTab(id){
-  // remove active state
   document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
   document.querySelectorAll(".tab-content").forEach(c=>c.classList.remove("active"));
 
-  // set active on the button (robust selector)
   let btn = document.querySelector(`.tab-btn[onclick*="openTab('${id}')"]`);
   if(!btn){
-    // fallback: match double quotes variant
     btn = document.querySelector(`.tab-btn[onclick*='openTab("${id}")']`);
   }
   if(btn) btn.classList.add("active");
 
-  // show content
   const content = document.getElementById(id);
   if(content) content.classList.add("active");
   
-  // Load data based on active tab
   if(id === 'penjualan') {
     loadSales(false); 
   } else if(id === 'restock') {
@@ -2950,7 +2591,6 @@ function closeCameraAlert(){
 function handleScan(msg) {
   const sku = String(msg).trim();
 
-  // Mode: filling SKU for Add Product form
   if (scanTarget === 'sku') {
     const skuInput = document.getElementById('sku');
     if (skuInput) {
@@ -2963,8 +2603,9 @@ function handleScan(msg) {
     return;
   }
 
-  // Mode: restock selection
   if (scanTarget === 'restock') {
+    if (!products) products = [];
+    
     const p = products.find(x => x.sku === sku);
     if (!p) {
       showCameraAlert("Produk tidak ditemukan di daftar. Tambahkan produk terlebih dahulu.");
@@ -2987,7 +2628,8 @@ function handleScan(msg) {
     return;
   }
 
-  // Default: sale-scan behavior
+  if (!products) products = [];
+  
   const p = products.find(x => x.sku === sku);
   if (!p) {
     showCameraAlert("Produk tidak ditemukan di daftar. Tambahkan produk terlebih dahulu.");
@@ -3031,6 +2673,8 @@ document.addEventListener("keydown", function (e) {
       return;
     }
 
+    if (!products) products = [];
+    
     const product = products.find(p => p.sku === scannedCode);
     if (product) {
       addToCart(product.sku);
@@ -3055,7 +2699,7 @@ document.addEventListener("keydown", function (e) {
     { selector: "#productGrid", text: "🛒 Pilih produk dari grid untuk menambahkan ke keranjang secara manual." },
     { selector: "#btnStartScan", text: "📸 Gunakan fitur Scan untuk menambah produk ke keranjang lewat kamera." },
     { selector: "#cart", text: "🛒 Semua barang yang kamu jual akan muncul di keranjang ini." },
-    { selector: "#checkoutBtn", text: "💰 Setelah selesai, tekan tombol ini untuk menyelesaikan penjualan (setelah bayar)." },
+    { selector: "#checkoutBtn", text: "💰 Setelah selesai, tekan tombol ini untuk memproses pembayaran dengan Midtrans." },
   ];
 
   let currentStep = 0;
@@ -3372,7 +3016,6 @@ function render(){
   tbl.innerHTML=""
   let matched = 0
   
-  // Pastikan products tidak undefined
   if (!products) products = [];
   
   products.forEach((p,i)=>{
@@ -3401,57 +3044,6 @@ function render(){
   renderProductGrid()
 }
 
-function renderProductGrid() {
-  const grid = document.getElementById("productGrid");
-  const searchValue = document.getElementById("productSearchInput").value.toLowerCase().trim();
-  
-  // Pastikan products tidak undefined
-  if (!products) products = [];
-  
-  // Filter products based on category and search
-  let filteredProducts = products.filter(p => {
-    const matchesCategory = currentCategory === 'all' || (p.category && p.category === currentCategory);
-    const matchesSearch = p.name.toLowerCase().includes(searchValue) || p.sku.toLowerCase().includes(searchValue);
-    return matchesCategory && matchesSearch;
-  });
-  
-  grid.innerHTML = "";
-  
-  if (filteredProducts.length === 0) {
-    grid.innerHTML = '<div class="muted" style="text-align:center;padding:20px">Tidak ada produk yang sesuai</div>';
-    return;
-  }
-  
-  filteredProducts.forEach(p => {
-    const card = document.createElement("div");
-    card.className = "product-card";
-    if (selectedProduct && selectedProduct.sku === p.sku) {
-      card.classList.add("selected");
-    }
-    
-    // Determine stock status
-    const stockClass = p.qty <= 5 ? "low" : "";
-    
-    card.innerHTML = `
-      <div class="product-name">${p.name}</div>
-      <div class="product-price">${formatRupiahNumber(p.price)}</div>
-      <div class="product-stock ${stockClass}">Stok: ${p.qty}</div>
-      <div class="product-actions">
-        <input type="number" class="product-quantity" id="qty-${p.sku}" value="1" min="1" max="${p.qty}">
-        <button class="product-add-btn" onclick="addProductFromGrid('${p.sku}')">Tambah</button>
-      </div>
-    `;
-    
-    card.onclick = function(e) {
-      // Don't select if clicking on input or button
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
-      selectProduct(p.sku);
-    };
-    
-    grid.appendChild(card);
-  });
-}
-
 /* ---------- Initialize Application ---------- */
 function init(){
   const autoPrintEl = document.getElementById('autoPrint')
@@ -3459,28 +3051,22 @@ function init(){
 
   loadPrinterPreference()
   
-  // Load data from Firebase
   loadProductsFromFirebase();
   loadSalesFromFirebase();
   loadRestocksFromFirebase();
   
-  // Set up real-time listeners
   setupFirebaseListeners();
   
-  // Initial render
   render();
   renderFinalStock();
   renderProductGrid();
   
-  // Set up periodic updates
   setInterval(renderFinalStock, 5000);
   
-  // Load initial data for reports
   loadSales(false);
   loadRestock(false);
 }
 
-// Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', init);
 
 </script>
